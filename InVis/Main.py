@@ -40,7 +40,6 @@ class InVis(MainWindow):
                 pass
         if type(pandasdata) == type(pd.DataFrame([])):
             """ Load a dataset from a file """
-            self.show_singletons = False
             self.point_representation = True
             self.show_center_point = False
             self.control_points = {}
@@ -121,6 +120,7 @@ class InVis(MainWindow):
         self.ml_cl_available = True
         self.ml_cl_index = None
         self.show_links = True
+        self.clustering = False
         self.info_request = False
         self.cp_select_request = False
         self.lasso_request = False

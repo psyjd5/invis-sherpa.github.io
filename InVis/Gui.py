@@ -48,6 +48,7 @@ class MainWindow(QMainWindow):
         self.pairwise_link_marker = 0
         self.ml_cl_available = True
         self.ml_cl_index = None
+        self.clustering = False
         self.show_links = True
         self.uncertainty_coloring_flag = False
         self.press = False
@@ -344,6 +345,7 @@ class MainWindow(QMainWindow):
         static_label        = self.prepare_menu_entry('Static embeddings:', greyed_out=True)
         static_xy           = self.prepare_menu_entry("    XY", shortcut=None, slot=self.select_xy, tip="XY-scatter plot of the first two checked attributes")
         static_pca          = self.prepare_menu_entry("    PCA", shortcut=None, slot=self.select_pca, tip="Principal Component Analysis")
+        static_kmeans       = self.prepare_menu_entry("    KMEANS", shortcut=None, slot=self.select_kmeans, tip="KMeans Clustering")
         static_lle          = self.prepare_menu_entry("    LLE", shortcut=None, slot=self.select_lle, tip="Locally Linear Embedding")
         static_iso          = self.prepare_menu_entry("    Isomap", shortcut=None, slot=self.select_isomap, tip="Isomap")
         static_mds          = self.prepare_menu_entry("    MDS", shortcut=None, slot=self.select_mds, tip="Multi dimensional Scaling")
@@ -353,7 +355,7 @@ class MainWindow(QMainWindow):
         lsp_selection       = self.prepare_menu_entry("    LSP", slot=self.select_lsp, tip="Least Squared error Projection")
         kb_pca_selection    = self.prepare_menu_entry("    c-KPCA", slot=self.select_cpca, tip="constrained Knowledge Based Kernel Principal Component Analysis (Slow + Initialization can take quite long)")
         mle_selection       = self.prepare_menu_entry("    MLE", slot=self.select_mle, tip="Maximum Likelihood Embedding")
-        self.add_menu_entry(self.projection_algorithm, (static_label, static_xy, static_pca, static_lle, static_iso, static_mds, static_ica, static_tsne, None, interactive_label, lsp_selection, kb_pca_selection, mle_selection))
+        self.add_menu_entry(self.projection_algorithm, (static_label, static_xy, static_pca, static_kmeans, static_lle, static_iso, static_mds, static_ica, static_tsne, None, interactive_label, lsp_selection, kb_pca_selection, mle_selection))
         
         self.view_menu = self.menuBar().addMenu("&View")
         color_scheme_label = self.prepare_menu_entry('Color schemes:', greyed_out=True)
@@ -832,6 +834,7 @@ class MainWindow(QMainWindow):
     def select_xy(self):
         """ Calculate a plain PCA embedding """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (XY)')
@@ -844,6 +847,7 @@ class MainWindow(QMainWindow):
     def select_pca(self):
         """ Calculate a plain PCA embedding """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (PCA)')
@@ -852,10 +856,22 @@ class MainWindow(QMainWindow):
             self.set_xy_limits()
             self.update()
 
+    def select_kmeans(self):
+        """ Calculate a KMeans embedding """
+        if self.data != None:
+            self.clustering = True
+            self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
+            self.set_mc_cl_unavailable()
+            self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (KMeans)')
+            self.reset_label()
+            self.embedding_algorithm = KMEANS(self.data.data, self.control_points, self) #Change This
+            self.set_xy_limits()
+            self.update()
 
     def select_lle(self):
         """ Calculate a locally linear embedding """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (LLE)')
@@ -868,6 +884,7 @@ class MainWindow(QMainWindow):
     def select_isomap(self):
         """ Calculate an isometric embedding """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (Isomap)')
@@ -880,6 +897,7 @@ class MainWindow(QMainWindow):
     def select_mds(self):
         """ Calculate a multi dimensional scaling embedding """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (MDS)')
@@ -893,6 +911,7 @@ class MainWindow(QMainWindow):
     def select_ica(self):
         """ Calculate an independent component analysis embedding """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (ICA)')
@@ -906,6 +925,7 @@ class MainWindow(QMainWindow):
     def select_tsne(self):
         """ Calculate an t-SNE embedding """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (t-SNE)')
@@ -918,6 +938,7 @@ class MainWindow(QMainWindow):
     def select_lsp(self):
         """ Selecte LSP as embedding algorithm """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_available()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (LSP)')
@@ -932,6 +953,7 @@ class MainWindow(QMainWindow):
     def select_cpca(self):
         """ Selecte constrained knowledge based kernel PCA as embedding algorithm """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_available()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (c-KPCA)')
@@ -946,6 +968,7 @@ class MainWindow(QMainWindow):
     def select_mle(self):
         """ Selecte MLE as embedding algorithm """
         if self.data != None:
+            self.clustering = False
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select.png")))
             self.set_mc_cl_available()
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (MLE)')
@@ -1493,11 +1516,18 @@ class MainWindow(QMainWindow):
             self.axes.plot([0,0], [self.ylim[0], self.ylim[1]], color='k', alpha=0.08, zorder=0)
             self.axes.plot([self.xlim[0], self.xlim[1]], [0,0], color='k', alpha=0.08, zorder=0)
         if self.point_representation:
-            if self.show_search_as_color:
-                self.colors = np.zeros(len(self.data.data))
-                for highlight in self.searched_results:
-                    self.colors[highlight] = 1.0
-            self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], color=self.color_scheme(self.colors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
+            if self.clustering:
+                clusters = self.embedding_algorithm.get_cluster_assocations()
+                clusters.astype(float)
+                clusterColor = np.ndarray.tolist(np.add(np.zeros(len(clusters)), np.multiply(clusters, 1.0/max(clusters))))
+                #lusterColor = np.ndarray.tolist(np.divide(clusters, np.full((1, len(clusters)), max(clusters))))
+                self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], color=pl.cm.brg(clusterColor), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
+            else: 
+                if self.show_search_as_color:
+                    self.colors = np.zeros(len(self.data.data))
+                    for highlight in self.searched_results:
+                        self.colors[highlight] = 1.0
+                self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], color=self.color_scheme(self.colors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
         else:
             self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], facecolor='none', picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
             for i, txt in enumerate(self.data.instance_names):

@@ -4,6 +4,7 @@ from copy import copy
 from matplotlib.mlab import PCA
 from sklearn import manifold
 from sklearn import decomposition
+from sklearn import cluster
 from collections import defaultdict
 # from scipy.spatial import distance
 from PyQt4.QtCore import *
@@ -84,6 +85,7 @@ class Embedding(object):
         self.Y = np.array([])
         self.ml = []
         self.cl = []
+        self.cluster_association = []
         self.has_ml_cl_constraints = False
         self.projection_matrix = np.zeros((2, len(self.data[0])))
         self.name = ''
@@ -617,3 +619,39 @@ class MLE(Embedding):
             self.augment_control_points(self.get_embedding().T)
             self.update_M_matrix()
             self.update_Psi_matrix()
+
+class KMEANS(Embedding):
+    def __init__(self, data, control_points, parent):
+        super(KMEANS, self).__init__(data, control_points, parent)
+        self.name = "KMEANS"
+        
+        try:
+            pca = decomposition.PCA(n_components=2)
+            pca.fit(data)
+            self.projection_matrix = pca.components_
+            self.embedding = np.array(pca.transform(data))
+        except:
+            msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
+            QMessageBox.about(parent, "Embedding error", msg)
+        
+        
+        try:
+            self.w = PopupSlider('Enter number of Clusters (default is 3):', default=3, minimum=2, maximum=30)
+            self.w.exec_()
+            num = int(self.w.slider_value)
+            if num == 1:
+                num = 3
+            cl = cluster.KMeans(n_clusters=num, random_state=0).fit(self.data)
+            self.cluster_association = np.array(cl.labels_)
+        except:
+            msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
+            QMessageBox.about(parent, "Embedding error", msg)
+    
+    def get_embedding(self):
+        return self.embedding.T
+
+    def get_cluster_assocations(self):
+        return self.cluster_association
+
+    def update_control_points(self, points):
+        pass
