@@ -641,6 +641,17 @@ class KMEANS(Embedding):
             num = int(self.w.slider_value)
             if num == 1:
                 num = 3
+            
+            #Kmeans++ Initilisastion
+            dims = np.tranpose(self.embedding)
+            x = np.random.uniform(low=np.min(dims[0]), high=np.max(dims[0]))
+            y = np.random.uniform(low=np.min(dims[1]), high=np.max(dims[1]))
+            cli = np.array([x,y])
+
+            distances = np.array([])
+            for i in range(num-1)
+                
+
             cl = cluster.KMeans(n_clusters=num, random_state=0).fit(self.data)
             self.cluster_association = np.array(cl.labels_)
         except:
