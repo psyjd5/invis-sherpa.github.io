@@ -5,6 +5,7 @@ from matplotlib.mlab import PCA
 from sklearn import manifold
 from sklearn import decomposition
 from sklearn import cluster
+import scipy.spatial.distance as dist
 from collections import defaultdict
 # from scipy.spatial import distance
 from PyQt4.QtCore import *
@@ -643,13 +644,17 @@ class KMEANS(Embedding):
                 num = 3
             
             #Kmeans++ Initilisastion
-            dims = np.tranpose(self.embedding)
-            x = np.random.uniform(low=np.min(dims[0]), high=np.max(dims[0]))
-            y = np.random.uniform(low=np.min(dims[1]), high=np.max(dims[1]))
-            cli = np.array([x,y])
+            #dims = np.transpose(self.embedding)
+            #x = np.random.uniform(low=np.min(dims[0]), high=np.max(dims[0]))
+            #y = np.random.uniform(low=np.min(dims[1]), high=np.max(dims[1]))
+            #cli = np.array([x,y])
+            embedSize = len(self.embedding)
+            cli = np.array([self.embedding[np.random.random_integers(embedSize)]])
 
             distances = np.array([])
             for i in range(num-1)
+                distance.cdist(self.embedding, cli)
+                
                 
 
             cl = cluster.KMeans(n_clusters=num, random_state=0).fit(self.data)
