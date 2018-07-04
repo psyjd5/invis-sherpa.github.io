@@ -643,22 +643,30 @@ class KMEANS(Embedding):
             if num == 1:
                 num = 3
             
-            #Kmeans++ Initilisastion
-            #dims = np.transpose(self.embedding)
-            #x = np.random.uniform(low=np.min(dims[0]), high=np.max(dims[0]))
-            #y = np.random.uniform(low=np.min(dims[1]), high=np.max(dims[1]))
-            #cli = np.array([x,y])
-            embedSize = len(self.embedding)
-            cli = np.array([self.embedding[np.random.random_integers(embedSize)]])
+            '''
+            So I was going to implement my own Kmeans++ initialisation until I realised
+            this is default for the KMeans method. My implementation is below
+            https://en.wikipedia.org/wiki/K-means%2B%2B#Improved_initialization_algorithm
+            
+            Initialise array with random data points
+            dataSize = np.size(data, axis=0)
+            cli = np.array([data[np.random.random_integers(dataSize)]])
+            
+            Then pick succesive data points as initial cluster centers, proportional
+            to the distance sqaured to the closest cluster center in cli.
 
-            distances = np.array([])
+            distanceSqrd = np.array([])
+            distanceSqrdAdjust = np.array([])
             for i in range(num-1)
-                distance.cdist(self.embedding, cli)
-                
-                
+                distanceSqrd = np.amax(np.square(dist.cdist(data, cli)), axis=1)
+                distanceSqrdAdjust = distanceSqrd/distanceSqrd.sum()
+                cli = np.append(cli, [data[np.random.choice(np.arange(dataSize), p=distanceSqrdAdjust)]], axis=0)
+            '''
 
-            cl = cluster.KMeans(n_clusters=num, random_state=0).fit(self.data)
+            cl = cluster.KMeans(n_clusters=num).fit(self.data)
             self.cluster_association = np.array(cl.labels_)
+            self.cluster_centers = np.array(cl.cluster_centers_)
+            self.cluster_centers_embedding = np.array(pca.transform(self.cluster_centers))
         except:
             msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
             QMessageBox.about(parent, "Embedding error", msg)
@@ -669,5 +677,10 @@ class KMEANS(Embedding):
     def get_cluster_assocations(self):
         return self.cluster_association
 
+    def get_cluster_centers(self):
+        return self.cluster_centers
+
+    def get_cluster_centers_embedding(self):
+        return self.cluster_centers_embedding.T
     def update_control_points(self, points):
         pass

@@ -1518,10 +1518,15 @@ class MainWindow(QMainWindow):
         if self.point_representation:
             if self.clustering:
                 clusters = self.embedding_algorithm.get_cluster_assocations()
-                clusters.astype(float)
-                clusterColor = np.ndarray.tolist(np.add(np.zeros(len(clusters)), np.multiply(clusters, 1.0/max(clusters))))
-                #lusterColor = np.ndarray.tolist(np.divide(clusters, np.full((1, len(clusters)), max(clusters))))
-                self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], color=pl.cm.brg(clusterColor), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
+                #clusterColor = np.ndarray.tolist(np.add(np.zeros(len(clusters)), np.multiply(clusters, 1.0/max(clusters))))
+                clusterColors = np.ndarray.tolist(clusters.astype(float) / np.max(clusters))
+                clusterCenters = self.embedding_algorithm.get_cluster_centers_embedding()
+                clusterCenterColors = np.ndarray.tolist(np.linspace(0, 1, np.size(clusterCenters), dtype=float))
+                print clusterCenters
+                print self.embedding
+                #clusterColor = np.ndarray.tolist(np.divide(clusters, np.full((1, len(clusters)), max(clusters))))
+                self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], color=pl.cm.brg(clusterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
+                self.scatter_plot = self.axes.scatter(clusterCenters[0], clusterCenters[1], color=pl.cm.brg(clusterCenterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=0.7, marker="*")
             else: 
                 if self.show_search_as_color:
                     self.colors = np.zeros(len(self.data.data))
