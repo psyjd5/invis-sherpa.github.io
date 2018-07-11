@@ -644,26 +644,6 @@ class KMEANS(Embedding):
             num = int(self.w.slider_value)
             if num == 1:
                 num = 3
-            
-            '''
-            So I was going to implement my own Kmeans++ initialisation until I realised
-            this is default for the KMeans method. My implementation is below
-            https://en.wikipedia.org/wiki/K-means%2B%2B#Improved_initialization_algorithm
-            
-            Initialise array with random data points
-            dataSize = np.size(data, axis=0)
-            cli = np.array([data[np.random.random_integers(dataSize)]])
-            
-            Then pick succesive data points as initial cluster centers, proportional
-            to the distance sqaured to the closest cluster center in cli.
-
-            distanceSqrd = np.array([])
-            distanceSqrdAdjust = np.array([])
-            for i in range(num-1)
-                distanceSqrd = np.amax(np.square(dist.cdist(data, cli)), axis=1)
-                distanceSqrdAdjust = distanceSqrd/distanceSqrd.sum()
-                cli = np.append(cli, [data[np.random.choice(np.arange(dataSize), p=distanceSqrdAdjust)]], axis=0)
-            '''
 
             '''cl = cluster.KMeans(n_clusters=num).fit(self.data)
             self.cluster_association = np.array(cl.labels_)

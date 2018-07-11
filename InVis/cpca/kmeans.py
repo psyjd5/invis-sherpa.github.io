@@ -92,6 +92,29 @@ def kmeanssample( X, k, nsample=0, **kwargs ):
     samplecentres = kmeans( Xsample, pass1centres, **kwargs )[0]
     return kmeans( X, samplecentres, **kwargs )
 
+#Need to add distance metric
+def kmeansplus(X, k, **kwargs):
+    '''Implementation of Kmeans++
+    https://en.wikipedia.org/wiki/K-means%2B%2B#Improved_initialization_algorithm'''
+
+    '''Initialise array with random data points'''
+    dataSize = np.size(X, axis=0)
+    cli = np.array([X[np.random.random_integers(dataSize)]])
+            
+    '''
+    Then pick succesive data points as initial cluster centers, proportional
+    to the distance sqaured to the closest cluster center in cli.
+    '''
+
+    distanceSqrd = np.array([])
+    distanceSqrdAdjust = np.array([])
+    for i in range(k-1):
+        distanceSqrd = np.amax(np.square(cdist(X, cli)), axis=1)
+        distanceSqrdAdjust = distanceSqrd/distanceSqrd.sum()
+        cli = np.append(cli, [X[np.random.choice(np.arange(dataSize), p=distanceSqrdAdjust)]], axis=0)
+    
+    return kmeans(X, cli, **kwargs)
+
 def cdist_sparse( X, Y, **kwargs ):
     """ -> |X| x |Y| cdist array, any cdist metric
         X or Y may be sparse -- best csr
@@ -144,14 +167,28 @@ class Kmeans:
                 clustercentre = centres[jcentre]
                 J indexes e.g. X[J], classes[J]
     """
-    def __init__( self, X, k=0, centres=None, nsample=0, **kwargs ):
+    def __init__( self, X, k=0, centres=None, nsample=0, iter=10, **kwargs ):
         self.X = X
+        '''self.centres, self.Xtocentre, '''
+        self.distances = np.array([])
         if centres is None:
-            self.centres, self.Xtocentre, self.distances = kmeanssample(
-                X, k=k, nsample=nsample, **kwargs )
+            for iterations in range(iter):
+                #c, Xtoc, d = kmeanssample(
+                #    X, k=k, nsample=nsample, **kwargs )
+                c, Xtoc, d = kmeansplus(
+                    X, k=k, **kwargs )
+                if((np.sum(d) < np.sum(self.distances)) or (sum(self.distances) == 0)):
+                    self.centres = c
+                    self.Xtocentre = Xtoc
+                    self.distances = d
         else:
-            self.centres, self.Xtocentre, self.distances = kmeans(
-                X, centres, **kwargs )
+            for iterations in range(iter):
+                c, Xtoc, d = kmeans(
+                    X, centres, **kwargs )
+                if((np.sum(d) < np.sum(self.distances)) or (sum(self.distances) == 0)):
+                    self.centres = c
+                    self.Xtocentre = Xtoc
+                    self.distances = d
 
     def __iter__(self):
         for jc in range(len(self.centres)):
