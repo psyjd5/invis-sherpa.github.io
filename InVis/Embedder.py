@@ -21,6 +21,8 @@ import cpca.skpca as skpca
 import cpca.kernel_gen as kernel_gen
 import cpca.utils as utils
 
+import cpca.kmeans as kmeans
+
 try:
     from sklearn.utils.sparsetools import _graph_validation
     from sklearn.neighbors import typedefs
@@ -663,10 +665,17 @@ class KMEANS(Embedding):
                 cli = np.append(cli, [data[np.random.choice(np.arange(dataSize), p=distanceSqrdAdjust)]], axis=0)
             '''
 
-            cl = cluster.KMeans(n_clusters=num).fit(self.data)
+            '''cl = cluster.KMeans(n_clusters=num).fit(self.data)
             self.cluster_association = np.array(cl.labels_)
             self.cluster_centers = np.array(cl.cluster_centers_)
+            self.cluster_centers_embedding = np.array(pca.transform(self.cluster_centers))'''
+
+            km = kmeans.Kmeans(self.data, k=num, nsample=50, delta=.001, maxiter=100, verbose=0)
+            self.cluster_association = km.Xtocentre
+            self.cluster_centers = km.centres
             self.cluster_centers_embedding = np.array(pca.transform(self.cluster_centers))
+
+
         except:
             msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
             QMessageBox.about(parent, "Embedding error", msg)

@@ -1,13 +1,15 @@
 #KMeans
 
 import numpy as np
-import scipy.spatial.distance as dist
+import random
+from scipy.spatial.distance import cdist
 from scipy.sparse import issparse
+from scipy.sparse import csr_matrix
 
 def kmeans( X, centres, delta=.001, maxiter=10, metric="euclidean", p=2, verbose=1 ):
     """ centres, Xtocentre, distances = kmeans( X, initial centres ... )
     in:
-        X N x dim  may be sparse
+        X N x dim: may be sparse
         centres k x dim: initial centres, e.g. random.sample( X, k )
         delta: relative error, iterate until the average distance to centres
             is within delta of the previous average distance
@@ -16,27 +18,34 @@ def kmeans( X, centres, delta=.001, maxiter=10, metric="euclidean", p=2, verbose
             "chebyshev" = max, "cityblock" = L1, "minkowski" with p=
             or a function( Xvec, centrevec ), e.g. Lqmetric below
         p: for minkowski metric -- local mod cdist for 0 < p < 1 too
-        verbose: 0 silent, 2 prints running distances
+        verbose: 0 silent, 1 prints running distances
     out:
         centres, k x dim
         Xtocentre: each X -> its nearest centre, ints N -> k
         distances, N
     see also: kmeanssample below, class Kmeans below.
     """
+    #Checks on Data Point Quality
     if not issparse(X):
         X = np.asanyarray(X)  # ?
+    #centres = (issparse(centres) ? centres.todense() : centres.copy())
     centres = centres.todense() if issparse(centres) \
         else centres.copy()
+    
+    #Check that the number of features for both data points and cluster centres are the same
     N, dim = X.shape
     k, cdim = centres.shape
     if dim != cdim:
         raise ValueError( "kmeans: X %s and centres %s must have the same number of columns" % (
             X.shape, centres.shape ))
+
     if verbose:
         print "kmeans: X %s  centres %s  delta=%.2g  maxiter=%d  metric=%s" % (
             X.shape, centres.shape, delta, maxiter, metric)
+
     allx = np.arange(N)
     prevdist = 0
+
     for jiter in range( 1, maxiter+1 ):
         D = cdist_sparse( X, centres, metric=metric, p=p )  # |X| x |centres|
         xtoc = D.argmin(axis=1)  # X -> nearest centre
@@ -147,7 +156,7 @@ class Kmeans:
     def __iter__(self):
         for jc in range(len(self.centres)):
             yield jc, (self.Xtocentre == jc)
-
+'''
 #...............................................................................
 if __name__ == "__main__":
     import random
@@ -183,3 +192,4 @@ if __name__ == "__main__":
     print "%.0f msec" % ((time() - t0) * 1000)
 
     # also ~/py/np/kmeans/test-kmeans.py
+'''
