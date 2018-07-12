@@ -73,8 +73,10 @@ class PopupSlider(QDialog):
 class KmeansPopup(QDialog):
     def __init__(self, default=4, minimum=1, maximum=20):
         QWidget.__init__(self)
-        self.slider_value = 1
-        self.layout =  QGridLayout()
+        self.sliderValue = default
+        self.comboBoxString = "euclidean"
+
+        self.layout =  QGridLayout(self)
 
         self.distSelectLbl = QLabel()
         self.distSelectLbl.setText("Select Preferred Distance Function")
@@ -84,6 +86,7 @@ class KmeansPopup(QDialog):
         "hamming", "jaccard", "kulsinski", "mahalanobis", "matching",
         "minkowski", "rogerstanimoto", "russellrao", "seuclidean",
         "sokalmichener", "sokalsneath", "sqeuclidean", "wminkowski", "yule"])
+        self.distSelect.currentIndexChanged.connect(self.selectionChange)
 
         self.clusterNumberLbl = QLabel()
         self.clusterNumberLbl.setText("Select Number of Clusters")
@@ -93,9 +96,9 @@ class KmeansPopup(QDialog):
         self.slider.setMaximum(maximum)
         self.slider.setValue(default)
 
-        self.value_label = QLabel()
-        self.value_label.setText('%d' % (self.slider.value()))
-        self.slider.valueChanged.connect(self.slider_changed)
+        self.valueLabel = QLabel()
+        self.valueLabel.setText('%d' % (self.slider.value()))
+        self.slider.valueChanged.connect(self.sliderChanged)
 
         self.button = QPushButton('Ok', self)
         self.button.clicked.connect(self.handleButton)
@@ -104,20 +107,24 @@ class KmeansPopup(QDialog):
         self.layout.addWidget(self.distSelectLbl,1,1)
         self.layout.addWidget(self.distSelect,1,2)
         self.layout.addWidget(self.clusterNumberLbl,2,1)
-        self.layout.addWidget(self.slider,3,1)
-        self.layout.addWidget(self.button,4,1)
+        self.layout.addWidget(self.slider,2,2)
+        self.layout.addWidget(self.valueLabel,2,3)
+        self.layout.addWidget(self.button,3,1, 1,3)
 
         self.setWindowTitle("Kmeans Settings")
 
 
-    def slider_changed(self):
+    def sliderChanged(self):
         val = self.slider.value()
-        self.value_label.setText('%d' %val)
-        self.slider_value = val
+        self.valueLabel.setText('%d' %val)
+        self.sliderValue = val
  
 
     def handleButton(self):
         self.hide()
+
+    def selectionChange(self):
+        self.comboBoxString = self.distSelect.currentText()
 
 
 
@@ -677,7 +684,7 @@ class KMEANS(Embedding):
         super(KMEANS, self).__init__(data, control_points, parent)
         self.name = "KMEANS"
         
-        kmInput = KmeansPopup()
+        self.kmInput = KmeansPopup()
         '''kmInput.setWindowTitle("Kmeans Settings")
 
         layout = QGridLayout()
@@ -698,15 +705,12 @@ class KMEANS(Embedding):
         clusterNumber.setMinimum(1)
         clusterNumber.setValue(7)
 
-
-
-
         layout.addWidget(distSelectLbl,1,1)
         layout.addWidget(distSelect,1,2)
         layout.addWidget(clusterNumberLbl,2,1)
         layout.addWidget(clusterNumber,3,1)
         kmInput.setLayout(layout)'''
-        kmInput.exec_()
+
         try:
             pca = decomposition.PCA(n_components=2)
             pca.fit(data)
@@ -718,18 +722,20 @@ class KMEANS(Embedding):
         
         
         try:
-            self.w = PopupSlider('Enter number of Clusters (default is 3):', default=3, minimum=2, maximum=30)
-            self.w.exec_()
-            num = int(self.w.slider_value)
-            if num == 1:
-                num = 3
+            self.kmInput = KmeansPopup()
+            self.kmInput.exec_()
+            num = int(self.kmInput.sliderValue)
+            met =  str(self.kmInput.comboBoxString)
+            
+            print met
+            print type(met)
 
             '''cl = cluster.KMeans(n_clusters=num).fit(self.data)
             self.cluster_association = np.array(cl.labels_)
             self.cluster_centers = np.array(cl.cluster_centers_)
             self.cluster_centers_embedding = np.array(pca.transform(self.cluster_centers))'''
 
-            km = kmeans.Kmeans(self.data, k=num, nsample=50, delta=.001, maxiter=100, verbose=0)
+            km = kmeans.Kmeans(self.data, k=num, nsample=50, delta=.001, maxiter=100, verbose=0, metric=met)
             self.cluster_association = km.Xtocentre
             self.cluster_centers = km.centres
             self.cluster_centers_embedding = np.array(pca.transform(self.cluster_centers))
