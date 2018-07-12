@@ -70,6 +70,55 @@ class PopupSlider(QDialog):
     def handleButton(self):
         self.hide()
 
+class KmeansPopup(QDialog):
+    def __init__(self, default=4, minimum=1, maximum=20):
+        QWidget.__init__(self)
+        self.slider_value = 1
+        self.layout =  QGridLayout()
+
+        self.distSelectLbl = QLabel()
+        self.distSelectLbl.setText("Select Preferred Distance Function")
+        self.distSelect = QComboBox()
+        self.distSelect.addItems(["euclidean","braycurtis", "canberra",
+        "chebyshev", "cityblock", "correlation", "cosine", "dice",
+        "hamming", "jaccard", "kulsinski", "mahalanobis", "matching",
+        "minkowski", "rogerstanimoto", "russellrao", "seuclidean",
+        "sokalmichener", "sokalsneath", "sqeuclidean", "wminkowski", "yule"])
+
+        self.clusterNumberLbl = QLabel()
+        self.clusterNumberLbl.setText("Select Number of Clusters")
+        
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(minimum)
+        self.slider.setMaximum(maximum)
+        self.slider.setValue(default)
+
+        self.value_label = QLabel()
+        self.value_label.setText('%d' % (self.slider.value()))
+        self.slider.valueChanged.connect(self.slider_changed)
+
+        self.button = QPushButton('Ok', self)
+        self.button.clicked.connect(self.handleButton)
+        self.button.pressed.connect(self.handleButton)
+
+        self.layout.addWidget(self.distSelectLbl,1,1)
+        self.layout.addWidget(self.distSelect,1,2)
+        self.layout.addWidget(self.clusterNumberLbl,2,1)
+        self.layout.addWidget(self.slider,3,1)
+        self.layout.addWidget(self.button,4,1)
+
+        self.setWindowTitle("Kmeans Settings")
+
+
+    def slider_changed(self):
+        val = self.slider.value()
+        self.value_label.setText('%d' %val)
+        self.slider_value = val
+ 
+
+    def handleButton(self):
+        self.hide()
+
 
 
 
@@ -628,8 +677,8 @@ class KMEANS(Embedding):
         super(KMEANS, self).__init__(data, control_points, parent)
         self.name = "KMEANS"
         
-        kmInput = QDialog()
-        kmInput.setWindowTitle("Kmeans Settings")
+        kmInput = KmeansPopup()
+        '''kmInput.setWindowTitle("Kmeans Settings")
 
         layout = QGridLayout()
         
@@ -656,7 +705,7 @@ class KMEANS(Embedding):
         layout.addWidget(distSelect,1,2)
         layout.addWidget(clusterNumberLbl,2,1)
         layout.addWidget(clusterNumber,3,1)
-        kmInput.setLayout(layout)
+        kmInput.setLayout(layout)'''
         kmInput.exec_()
         try:
             pca = decomposition.PCA(n_components=2)
