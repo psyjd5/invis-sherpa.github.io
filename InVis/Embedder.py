@@ -10,7 +10,7 @@ from collections import defaultdict
 # from scipy.spatial import distance
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from PyQt4.Qt import *
+#from PyQt4.Qt import *
 # explicitly imported "hidden imports" for pyinstaller
 #from sklearn.utils import weight_vector, lgamma
 from sklearn.metrics.pairwise import euclidean_distances, pairwise_distances
@@ -628,6 +628,36 @@ class KMEANS(Embedding):
         super(KMEANS, self).__init__(data, control_points, parent)
         self.name = "KMEANS"
         
+        kmInput = QDialog()
+        kmInput.setWindowTitle("Kmeans Settings")
+
+        layout = QGridLayout()
+        
+        distSelectLbl = QLabel()
+        distSelectLbl.setText("Select Preferred Distance Function")
+        distSelect = QComboBox()
+        distSelect.addItems(["euclidean","braycurtis", "canberra",
+        "chebyshev", "cityblock", "correlation", "cosine", "dice",
+        "hamming", "jaccard", "kulsinski", "mahalanobis", "matching",
+        "minkowski", "rogerstanimoto", "russellrao", "seuclidean",
+        "sokalmichener", "sokalsneath", "sqeuclidean", "wminkowski", "yule"])
+
+        clusterNumberLbl = QLabel()
+        clusterNumberLbl.setText("Select Number of Clusters")
+        clusterNumber = QSlider(Qt.Horizontal)
+        clusterNumber.setMaximum(np.size(data,1)/20)
+        clusterNumber.setMinimum(1)
+        clusterNumber.setValue(7)
+
+
+
+
+        layout.addWidget(distSelectLbl,1,1)
+        layout.addWidget(distSelect,1,2)
+        layout.addWidget(clusterNumberLbl,2,1)
+        layout.addWidget(clusterNumber,3,1)
+        kmInput.setLayout(layout)
+        kmInput.exec_()
         try:
             pca = decomposition.PCA(n_components=2)
             pca.fit(data)
