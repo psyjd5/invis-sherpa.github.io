@@ -75,17 +75,17 @@ class KmeansPopup(QDialog):
         QWidget.__init__(self)
         self.sliderValue = default
         self.comboBoxString = "euclidean"
+        self.distMap = {"Euclidean":"euclidean", "Braycurtis":"braycurtis", "Canberra":"canberra",
+        "Chebyshev":"chebyshev", "Manhattan":"cityblock", "Correlation":"correlation", "Cosine":"cosine",
+        "Hamming":"hamming", "Jaccard":"jaccard","Mahalanobis":"mahalanobis", "Minkowski":"minkowski",
+        "Standard Euclidean":"seuclidean", "Squared Euclidean":"sqeuclidean"}
 
         self.layout =  QGridLayout(self)
 
         self.distSelectLbl = QLabel()
         self.distSelectLbl.setText("Select Preferred Distance Function")
         self.distSelect = QComboBox()
-        self.distSelect.addItems(["euclidean","braycurtis", "canberra",
-        "chebyshev", "cityblock", "correlation", "cosine", "dice",
-        "hamming", "jaccard", "kulsinski", "mahalanobis", "matching",
-        "minkowski", "rogerstanimoto", "russellrao", "seuclidean",
-        "sokalmichener", "sokalsneath", "sqeuclidean", "wminkowski", "yule"])
+        self.distSelect.addItems(self.distMap.keys())
         self.distSelect.currentIndexChanged.connect(self.selectionChange)
 
         self.clusterNumberLbl = QLabel()
@@ -124,7 +124,7 @@ class KmeansPopup(QDialog):
         self.hide()
 
     def selectionChange(self):
-        self.comboBoxString = self.distSelect.currentText()
+        self.comboBoxString = self.distMap[str(self.distSelect.currentText())]
 
 
 
