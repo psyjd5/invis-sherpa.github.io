@@ -529,6 +529,7 @@ class cPCA(Embedding):
         K = gk.compute_matrix(data, self.params)
         self.embedder = solvers.embedder(2.56e-16, 800, True)
         self.kernel_sys = self.embedder.kernel_sys(K)
+        print self.kernel_sys
         self.parent.status_text.setText("Done, calculating Gaussean kernel.")
 
         label_mask = np.array([0])
@@ -679,12 +680,12 @@ class MLE(Embedding):
             self.update_M_matrix()
             self.update_Psi_matrix()
 
-class KMEANS(Embedding):
+class KMEANS(cPCA):
     def __init__(self, data, control_points, parent):
         super(KMEANS, self).__init__(data, control_points, parent)
         self.name = "KMEANS"
         
-        self.kmInput = KmeansPopup()
+        #self.kmInput = KmeansPopup()
         '''kmInput.setWindowTitle("Kmeans Settings")
 
         layout = QGridLayout()
@@ -711,14 +712,14 @@ class KMEANS(Embedding):
         layout.addWidget(clusterNumber,3,1)
         kmInput.setLayout(layout)'''
 
-        try:
+        '''try:
             pca = decomposition.PCA(n_components=2)
             pca.fit(data)
             self.projection_matrix = pca.components_
             self.embedding = np.array(pca.transform(data))
         except:
             msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
-            QMessageBox.about(parent, "Embedding error", msg)
+            QMessageBox.about(parent, "Embedding error", msg)'''
         
         
         try:
@@ -745,8 +746,8 @@ class KMEANS(Embedding):
             msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
             QMessageBox.about(parent, "Embedding error", msg)
     
-    def get_embedding(self):
-        return self.embedding.T
+    '''def get_embedding(self):
+        return self.embedding.T'''
 
     def get_cluster_assocations(self):
         return self.cluster_association
@@ -756,5 +757,5 @@ class KMEANS(Embedding):
 
     def get_cluster_centers_embedding(self):
         return self.cluster_centers_embedding.T
-    def update_control_points(self, points):
-        pass
+    '''def update_control_points(self, points):
+        pass'''
