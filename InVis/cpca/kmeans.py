@@ -31,7 +31,7 @@ def kmeans( X, centres, delta=.001, maxiter=10, metric="euclidean", p=2, verbose
     #centres = (issparse(centres) ? centres.todense() : centres.copy())
     centres = centres.todense() if issparse(centres) \
         else centres.copy()
-    
+
     #Check that the number of features for both data points and cluster centres are the same
     N, dim = X.shape
     k, cdim = centres.shape
@@ -100,6 +100,8 @@ def kmeansplus(X, k, **kwargs):
     '''Initialise array with random data points'''
     dataSize = np.size(X, axis=0)
     cli = np.array([X[np.random.random_integers(dataSize)]])
+
+    metric = kwargs.get('metric',"euclidean")
             
     '''
     Then pick succesive data points as initial cluster centers, proportional
@@ -109,7 +111,7 @@ def kmeansplus(X, k, **kwargs):
     distanceSqrd = np.array([])
     distanceSqrdAdjust = np.array([])
     for i in range(k-1):
-        distanceSqrd = np.amax(np.square(cdist(X, cli)), axis=1)
+        distanceSqrd = np.amax(np.square(cdist(X, cli, metric)), axis=1)
         distanceSqrdAdjust = distanceSqrd/distanceSqrd.sum()
         cli = np.append(cli, [X[np.random.choice(np.arange(dataSize), p=distanceSqrdAdjust)]], axis=0)
     

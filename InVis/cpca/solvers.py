@@ -599,10 +599,20 @@ class quad_solver(object):
         return inv_arg_perm
     
     def maximizer(self, eig_sys, b, r):
+        print "maximizer\n"
         top_eig_val_idx = np.argmax(eig_sys[0])
+        print "top_eig_val_idx"
+        print top_eig_val_idx
+        print b
         if b != None:
             d = eig_sys[1].T.dot(b.reshape(-1, 1)).reshape(-1)
+            print "d"
+            print d
+            print "eig_sys[0]"
+            print eig_sys[0]
+            print r
             gander_res = self.gander_solver.root(-1, d, eig_sys[0], r)
+            print gander_res
             if np.abs(gander_res[1][top_eig_val_idx]) > self.precision:
                 return (eig_sys[1].dot((d / gander_res[1]).reshape(-1, 1)).reshape(-1), d)
             
@@ -641,6 +651,8 @@ class greedy_dir_solver(object):
     def _next_direction(self, quad_eig_sys, b, r, alpha=None, mu=None):
         if alpha == None:
             quad_res = self.quad_solver.maximizer(quad_eig_sys, b, r) 
+            print "quad_res"
+            print quad_res
             return (quad_res[0], quad_res[1], quad_eig_sys)
         
         rnk_one_upd_eig_sys = self.eig_solver.decompose(quad_eig_sys[0], alpha, mu)
@@ -808,6 +820,11 @@ class embedder(object):
         sph_var_term = K2 - L
         #sph_var_term = kernel_sys[1].dot(H).dot(kernel_sys[1])
         svt_eig_vals, svt_eig_vecs = np.linalg.eigh(sph_var_term)
+        #print "SVT"
+        #print np.shape(np.array(svt_eig_vals))
+        #print np.shape(np.array(svt_eig_vecs))
+        #print svt_eig_vals
+        #print svt_eig_vecs
         return (svt_eig_vals, svt_eig_vecs)
     
     def unl_sph_cl_var_term_eig_sys(self, kernel_sys, cp_indxs, mu):
@@ -929,8 +946,20 @@ class embedder(object):
     
     def soft_cp_mode_directions(self, sph_quad_eig_sys, label_mask, y, kernel_sys, params, const_nu):
         dim = y.shape[1]
+        print "dim (y.shape) from soft_cp"
+        print dim
+        print "\n"
         orth_nu = self.orth_nu(params, dim, kernel_sys)
+        #print "orth_nu from soft_cp"
+        #print orth_nu
+        #print "\n"
         lin_term = self.__interpret_cp_lin_constraint(kernel_sys, y, label_mask, const_nu)
+        #print "lin_term from soft_cp"
+        #print lin_term
+        #print "\n"
+        #print "directions from soft_cp"
+        #print self.direction_solver.directions(kernel_sys, sph_quad_eig_sys, 0.5 * lin_term, params['r'], orth_nu)
+        #print "\n"
         return self.direction_solver.directions(kernel_sys, sph_quad_eig_sys, 0.5 * lin_term, params['r'], orth_nu)
     
     def soft_cp_mode_ho_directions(self, sph_quad_eig_sys, label_mask, y, kernel_sys, params, const_nu):
@@ -948,6 +977,12 @@ class embedder(object):
     def __interpret_cp_lin_constraint(self, kernel_sys, y, label_mask, const_nu):
         lab_sub_K = kernel_sys[0][label_mask, :]
         ellipsoid_lin_term = -2 * const_nu * lab_sub_K.T.dot(y)
+        #print np.shape(y)
+        #print np.shape(lab_sub_K.T)
+        #print ellipsoid_lin_term
+        #print np.shape(kernel_sys[2])
+        #print np.shape(ellipsoid_lin_term)
+        #print lab_sub_K
         return kernel_sys[2].dot(ellipsoid_lin_term)
     
     def __interpret_cl_constraint(self, kernel_sys, y, label_mask, params):
