@@ -208,6 +208,10 @@ class Embedding(object):
         for i, coords in points.items():
             self.control_point_indices.append(i)
             self.control_points.append(coords)
+
+        #print "hi"
+        #print self.control_point_indices
+        #print self.control_points
         self.X = self.data[self.control_point_indices]
         self.Y = np.array(self.control_points)
 
@@ -527,6 +531,9 @@ class cPCA(Embedding):
         gk = kernel_gen.gaussian_kernel()
         # gk = kernel_gen.polynomial_kernel()
         K = gk.compute_matrix(data, self.params)
+        print "GUASSIAN KERNEL"
+        print K
+        print np.shape(np.array(K))
         self.embedder = solvers.embedder(2.56e-16, 800, True)
         self.kernel_sys = self.embedder.kernel_sys(K)
         #print self.kernel_sys
@@ -574,11 +581,14 @@ class cPCA(Embedding):
 
 
     def update_control_points(self, points):
-        print "Len self.y from update_control_points"
-        print len(self.Y)
-        print "Shape self.y from update_control_points"
-        print np.shape(self.Y)
         super(cPCA, self).update_control_points(points)
+        #print "Len self.y from update_control_points"
+        #print len(self.Y)
+        #print "Shape self.y from update_control_points"
+        #print np.shape(np.array(self.Y))
+        #print "dfd"
+        #print self.Y
+        #print "hmm"
         if len(self.control_point_indices) > len(self.old_control_point_indices):
                 selected_point = self.parent.selected_point
                 if selected_point == None:
@@ -591,7 +601,7 @@ class cPCA(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,3)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
             else:
                 pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
@@ -604,7 +614,7 @@ class cPCA(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,3)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
             else:
                 pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)

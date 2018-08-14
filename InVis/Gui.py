@@ -1351,6 +1351,11 @@ class MainWindow(QMainWindow):
         interesting_points += self.info_requests
         interesting_points += self.control_points.keys()
         ind = event.ind[0]
+
+        #print "HWLLO"
+        #print ind
+        #print interesting_points
+        #print self.control_points
         for p in interesting_points:
             if p in event.ind:
                 ind = p
@@ -1460,7 +1465,11 @@ class MainWindow(QMainWindow):
                         except:
                             pass
                 if self.embedding_algorithm.is_dynamic:
-                    self.control_points[self.selected_point] = [event.xdata, event.ydata]
+                    #print "INSS"
+                    #print self.control_points[self.selected_point]
+                    #self.control_points[self.selected_point]= [event.xdata, event.ydata]
+                    self.control_points[self.selected_point][0] = event.xdata
+                    self.control_points[self.selected_point][1] = event.ydata
                     self.embedding_algorithm.update_control_points(self.control_points)
                     self.update()
     
