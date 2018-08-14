@@ -88,6 +88,12 @@ class KmeansPopup(QDialog):
         self.distSelect.addItems(self.distMap.keys())
         self.distSelect.currentIndexChanged.connect(self.selectionChange)
 
+        self.projectionNumberLbl = QLabel()
+        self.projectionNumberLbl.setText("Select Projection Level")
+        
+        self.radioButton = QRadioButton()
+        self.radioButton 
+
         self.clusterNumberLbl = QLabel()
         self.clusterNumberLbl.setText("Select Number of Clusters")
         
@@ -531,9 +537,9 @@ class cPCA(Embedding):
         gk = kernel_gen.gaussian_kernel()
         # gk = kernel_gen.polynomial_kernel()
         K = gk.compute_matrix(data, self.params)
-        print "GUASSIAN KERNEL"
-        print K
-        print np.shape(np.array(K))
+        #print "GUASSIAN KERNEL"
+        #print K
+        #print np.shape(np.array(K))
         self.embedder = solvers.embedder(2.56e-16, 800, True)
         self.kernel_sys = self.embedder.kernel_sys(K)
         #print self.kernel_sys
@@ -550,14 +556,14 @@ class cPCA(Embedding):
         self.update_control_points(points)
         self.finished_relocating()
         if len(self.Y) == 0:
-            pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, label_mask, np.ones((1,3)), self.kernel_sys, self.params, 1e-20)
+            pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, label_mask, np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
         else:
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
-        print "PCA_DIRS"
+        '''print "PCA_DIRS"
         print np.shape(np.array(pca_dirs))
-        print pca_dirs
+        print pca_dirs'''
         self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
         print "PCA_Projection"
         print np.shape(np.array(self.pca_projection))
@@ -601,7 +607,7 @@ class cPCA(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,3)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
             else:
                 pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
@@ -614,7 +620,7 @@ class cPCA(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,3)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
             else:
                 pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
@@ -742,8 +748,8 @@ class KMEANS(Embedding):
             km = kmeans.Kmeans(self.data, k=num, nsample=50, delta=.001, maxiter=100, verbose=0, metric=met)
             self.cluster_association = km.Xtocentre
             self.cluster_centers = km.centres
-            print np.shape(self.cluster_centers)
-            print np.shape(self.data)
+            #print np.shape(self.cluster_centers)
+            #print np.shape(self.data)
 
         except:
             msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
@@ -809,7 +815,7 @@ class KMEANS(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,3)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
                 self.cluster_centers_embedding = self.cluster_centers.dot(directions)
             else:
@@ -824,7 +830,7 @@ class KMEANS(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,3)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
                 self.cluster_centers_embedding = self.cluster_centers.dot(directions)
             else:

@@ -599,11 +599,11 @@ class quad_solver(object):
         return inv_arg_perm
     
     def maximizer(self, eig_sys, b, r):
-        print "maximizer\n"
+        #print "maximizer\n"
         top_eig_val_idx = np.argmax(eig_sys[0])
         #print "top_eig_val_idx"
         #print top_eig_val_idx
-        print b
+        #print b
         if b != None:
             d = eig_sys[1].T.dot(b.reshape(-1, 1)).reshape(-1)
             #print "d"
@@ -658,8 +658,8 @@ class greedy_dir_solver(object):
             return (quad_res[0], quad_res[1], quad_eig_sys)
         
         rnk_one_upd_eig_sys = self.eig_solver.decompose(quad_eig_sys[0], alpha, mu)
-        print "RANK ONE"
-        print rnk_one_upd_eig_sys
+        #print "RANK ONE"
+        #print rnk_one_upd_eig_sys
         quad_res = self.quad_solver.maximizer(rnk_one_upd_eig_sys, b, r)
         return (quad_res[0], quad_res[1], rnk_one_upd_eig_sys)
     
@@ -675,12 +675,12 @@ class greedy_dir_solver(object):
         return False
     
     def directions(self, kernel_sys, quad_eig_sys, b, r, orth_nu):
-        print "n = quad_eig_sys[0].shape[0]"
+        #print "n = quad_eig_sys[0].shape[0]"
         n = quad_eig_sys[0].shape[0]
-        print n
+        #print n
         dim = b.shape[1]
-        print "dim = b.shape[1]"
-        print dim
+        #print "dim = b.shape[1]"
+        #print dim
         directions = np.zeros((n, dim))
         d = np.copy(b)
         if isinstance(quad_eig_sys[1], list):
@@ -689,17 +689,17 @@ class greedy_dir_solver(object):
                 d = quad_eig_sys[1][i].T.dot(d)
         else:
             dir_eig_sys = [quad_eig_sys]
-        print "d"
-        print d
+        #print "d"
+        #print d
 
         alpha = None
         for i in range(dim):
             dir_res = self._next_direction(dir_eig_sys[i - 1], d[:, i] if self.__nonzero_vec(d[:, i]) else None, r, alpha, orth_nu)
-            print "dir_res"
-            print dir_res
+            #print "dir_res"
+            #print dir_res
             directions[:, i] = dir_res[0]
-            print "directions[:, i]"  
-            print directions[:, i]            
+            #print "directions[:, i]"  
+            #print directions[:, i]            
             for j in reversed(range(1, i + 1)):
                 directions[:, i] = dir_eig_sys[j][1].dot(directions[:, i])
              
@@ -708,7 +708,7 @@ class greedy_dir_solver(object):
                     directions[:, i] = quad_eig_sys[1][j].dot(directions[:, i])
             
             directions[:, i] = self.from_sphere_to_ellipsoid(directions[:, i], kernel_sys)
-            print "directions[:, i]"
+            '''print "directions[:, i]"
             print directions[:, i]
 
             print "size dir_res"
@@ -716,25 +716,25 @@ class greedy_dir_solver(object):
             print "size dir_res[2][1].T"
             print np.size(np.array(dir_res[2][1].T))
             print "dir_res[2][1].T"
-            print dir_res[2][1].T
+            print dir_res[2][1].T'''
             d = dir_res[2][1].T.dot(d)
-            print "d = dir_res[2][1].T.dot(d)"
-            print d
+            #print "d = dir_res[2][1].T.dot(d)"
+            #print d
             alpha = np.copy(dir_res[0])
-            print "alpha = np.copy(dir_res[0])"
-            print alpha
+            #print "alpha = np.copy(dir_res[0])"
+            #print alpha
             alpha = dir_res[2][1].T.dot(alpha)
-            print "alpha = dir_res[2][1].T.dot(alpha)"
-            print alpha
+            #print "alpha = dir_res[2][1].T.dot(alpha)"
+            #print alpha
             dir_eig_sys.append(dir_res[2])
-            print "dir_eig_sys.append(dir_res[2])"
+            '''print "dir_eig_sys.append(dir_res[2])"
             print dir_eig_sys
 
             print "DIRECTIONS"
-            print directions
+            print directions'''
         
-        print "DIRECTION"
-        print directions
+        '''print "DIRECTION"
+        print directions'''
         return directions
 
     def _seq_eig_sys_next_direction(self, seq_eig_sys, b, r):
@@ -855,11 +855,11 @@ class embedder(object):
         sph_var_term = K2 - L
         #sph_var_term = kernel_sys[1].dot(H).dot(kernel_sys[1])
         svt_eig_vals, svt_eig_vecs = np.linalg.eigh(sph_var_term)
-        print "SVT"
+        '''print "SVT"
         print np.shape(np.array(svt_eig_vals))
         print np.shape(np.array(svt_eig_vecs))
         print svt_eig_vals
-        print svt_eig_vecs
+        print svt_eig_vecs'''
         return (svt_eig_vals, svt_eig_vecs)
     
     def unl_sph_cl_var_term_eig_sys(self, kernel_sys, cp_indxs, mu):
@@ -981,17 +981,17 @@ class embedder(object):
     
     def soft_cp_mode_directions(self, sph_quad_eig_sys, label_mask, y, kernel_sys, params, const_nu):
         dim = y.shape[1]
-        print "dim (y.shape) from soft_cp"
+        '''print "dim (y.shape) from soft_cp"
         print dim
-        print "\n"
+        print "\n"'''
         orth_nu = self.orth_nu(params, dim, kernel_sys)
-        print "orth_nu from soft_cp"
+        '''print "orth_nu from soft_cp"
         print orth_nu
-        print "\n"
+        print "\n"'''
         lin_term = self.__interpret_cp_lin_constraint(kernel_sys, y, label_mask, const_nu)
-        print "lin_term from soft_cp"
+        '''print "lin_term from soft_cp"
         print lin_term
-        print "\n"
+        print "\n"'''
         #print "directions from soft_cp"
         #print self.direction_solver.directions(kernel_sys, sph_quad_eig_sys, 0.5 * lin_term, params['r'], orth_nu)
         #print "\n"
@@ -1017,8 +1017,8 @@ class embedder(object):
         #print ellipsoid_lin_term
         #print np.shape(kernel_sys[2])
         #print np.shape(ellipsoid_lin_term)
-        print kernel_sys[0]
-        print lab_sub_K
+        '''print kernel_sys[0]
+        print lab_sub_K'''
         return kernel_sys[2].dot(ellipsoid_lin_term)
     
     def __interpret_cl_constraint(self, kernel_sys, y, label_mask, params):
