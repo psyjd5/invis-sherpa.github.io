@@ -88,6 +88,11 @@ class KmeansPopup(QDialog):
         self.distSelect.addItems(self.distMap.keys())
         self.distSelect.currentIndexChanged.connect(self.selectionChange)
 
+        self.projectionTypeLbl = QLabel()
+        self.projectionTypeLbl.setText("Select Preferred Embedding")
+        self.projectionType = QComboBox()
+        self.projectionType.addItems(["PCA", "kPCA", "MLE"])
+
         self.projectionNumberLbl = QLabel()
         self.projectionNumberLbl.setText("Select Projection Level")
         
@@ -126,10 +131,12 @@ class KmeansPopup(QDialog):
 
         self.layout.addWidget(self.distSelectLbl,1,1)
         self.layout.addWidget(self.distSelect,1,2)
-        self.layout.addWidget(self.clusterNumberLbl,2,1)
-        self.layout.addWidget(self.slider,2,2)
-        self.layout.addWidget(self.valueLabel,2,3)
-        self.layout.addWidget(self.button,3,1, 1,3)
+        self.layout.addWidget(self.projectionTypeLbl, 2,1)
+        self.layout.addWidget(self.projectionType, 2,2)
+        self.layout.addWidget(self.clusterNumberLbl,3,1)
+        self.layout.addWidget(self.slider,3,2)
+        self.layout.addWidget(self.valueLabel,3,3)
+        self.layout.addWidget(self.button,5,1, 5,3)
         self.layout.addWidget(self.projectionSelectionGroup,4,1)
 
         self.setWindowTitle("Kmeans Settings")
@@ -239,9 +246,12 @@ class Embedding(object):
     def finished_relocating(self):
         pass
 
-class EmbeddingContainter(object):
-    def __init__(self, embedding):
-        self.embedding = embedding
+'''class EmbeddingContainter(object):
+    def __init__(self, data, points, parent, embeddingType="PCA"):
+        self.embeddingType = embeddingType
+        if(self.embeddingType == "PCA"):
+            self.embedding = PCA(data, points, parent)
+        else if
 
     def get_embedding(self):
         self.embedding.get_embedding()
@@ -253,16 +263,16 @@ class EmbeddingContainter(object):
         self.embedding.update_control_points(points)
 
     def finished_relocating(self):
-        self.embedding.finished_relocating()
+        self.embedding.finished_relocating()'''
 
 class PCA(Embedding):
-    def __init__(self, data, control_points, parent):
+    def __init__(self, data, control_points, parent, dim=2):
         super(PCA, self).__init__(data, control_points, parent)
         self.name = "PCA"
         self.projection_matrix = None
 
         try:
-            pca = decomposition.PCA(n_components=2)
+            pca = decomposition.PCA(n_components=dim)
             pca.fit(data)
             self.projection_matrix = pca.components_
             self.embedding = np.array(pca.transform(data))
@@ -536,7 +546,7 @@ class cPCA_dummy(Embedding):
 
 
 class cPCA(Embedding):
-    def __init__(self, data, points, parent):
+    def __init__(self, data, points, parent, dim=2):
         self.data = data
         self.control_points = []
         self.control_point_indices = []
@@ -583,7 +593,7 @@ class cPCA(Embedding):
         self.update_control_points(points)
         self.finished_relocating()
         if len(self.Y) == 0:
-            pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, label_mask, np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
+            pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, label_mask, np.ones((1,dim)), self.kernel_sys, self.params, 1e-20)
         else:
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
@@ -634,7 +644,7 @@ class cPCA(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,dim)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
             else:
                 pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
@@ -647,7 +657,7 @@ class cPCA(Embedding):
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             if len(self.control_point_indices) == 0:
-                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,2)), self.kernel_sys, self.params, 1e-20)
+                pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, np.array([0]), np.ones((1,dim)), self.kernel_sys, self.params, 1e-20)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
             else:
                 pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
@@ -662,7 +672,7 @@ class cPCA(Embedding):
 
 
 class MLE(Embedding):
-    def __init__(self, data, points, parent):
+    def __init__(self, data, points, parent, dim=2):
         self.data = data
         self.control_points = []
         self.control_point_indices = []
@@ -676,7 +686,7 @@ class MLE(Embedding):
         self.cl = []
         self.has_ml_cl_constraints = False
 
-        pca = decomposition.PCA(n_components=2)
+        pca = decomposition.PCA(n_components=dim)
         pca.fit(self.data)
         self.M_base = pca.components_ # init M with PCA[1,2]
         self.M = self.M_base
@@ -739,7 +749,7 @@ class MLE(Embedding):
             self.update_Psi_matrix()
 
 
-class KMEANS(Embedding):
+'''class KMEANS(Embedding):
     def __init__(self, data, points, parent):
         self.data = data
         self.control_points = []
@@ -827,7 +837,8 @@ class KMEANS(Embedding):
         if len(self.control_point_indices) > 0:
             directions = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
             self.pca_projection = self.kernel_sys[0].dot(directions)
-            self.run_kmeans(self.num,self.met)   
+            self.run_kmeans(self.num,self.met)
+        return self.pca_projection
 
 
     def update_control_points(self, points):
@@ -866,8 +877,81 @@ class KMEANS(Embedding):
             else:
                 pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
                 self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
-                self.run_kmeans(self.num,self.met)
+                self.run_kmeans(self.num,self.met)'''
 
 '''
 class KMEANS(EmbeddingContainer):
     def __init__(self, data, points, parent):
+        self.kmInput = KmeansPopup()
+        self.kmInput.exec_()
+        self.num = int(self.kmInput.sliderValue)
+        self.met = str(self.kmInput.comboBoxString)
+        self.dim = int(self.kmInput.radioGroup.checkedButton().text())
+        self.emb = str(self.kmInput.projectionType.currentText())
+
+        super(KMEANS, self).__init__(data, points, parent, emb)
+
+    def run_kmeans(self, num, met):
+        try:    
+            km = kmeans.Kmeans(self.get, k=num, nsample=50, delta=.001, maxiter=100, verbose=0, metric=met)
+            self.cluster_association = km.Xtocentre
+            self.cluster_centers = km.centres
+            self.cluster_centers_embedding = self.cluster_centers
+        except:
+            msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
+            QMessageBox.about("Embedding error", msg)
+'''
+class KMEANS(object):
+    def __init__(self, data, points, parent):
+        self.parent = parent
+        self.kmInput = KmeansPopup()
+        self.kmInput.exec_()
+        self.num = int(self.kmInput.sliderValue)
+        self.met = str(self.kmInput.comboBoxString)
+        self.dim = int(self.kmInput.radioGroup.checkedButton().text())
+        self.embeddingType = str(self.kmInput.projectionType.currentText())
+              
+        if (self.embeddingType == "MLE"):
+            self.embedding = MLE(data, points, parent, dim=self.dim)
+        elif (self.embeddingType == "kPCA"):
+            self.embedding = cPCA(data, points, parent, dim=self.dim)
+        else:
+            self.embedding = PCA(data, points, parent, dim=self.dim)
+
+    def get_embedding(self):
+        embed = self.embedding.get_embedding()
+        self.run_kmeans(embed.T, self.num, self.met)
+        return embed
+
+    def update_must_and_cannot_link(self, ml, cl):
+        self.embedding.update_must_and_cannot_link(ml,cl)
+
+    def update_control_points(self, points):
+        self.embedding.update_control_points(points)
+        embed = self.embedding.get_embedding()
+        self.run_kmeans(embed.T, self.num, self.met)
+
+    def finished_relocating(self):
+        relocate = self.embedding.finished_relocating()
+        embed = self.embedding.get_embedding()
+        self.run_kmeans(embed.T, self.num, self.met)
+        return relocate
+
+    def run_kmeans(self, data, num, met):
+        try:    
+            km = kmeans.Kmeans(self.embedding.get_embedding().T, k=num, nsample=50, delta=.001, maxiter=100, verbose=0, metric=met)
+            self.cluster_association = km.Xtocentre
+            self.cluster_centers = km.centres
+            self.cluster_centers_embedding = self.cluster_centers
+        except:
+            msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
+            QMessageBox.about(self.parent, "Embedding error", msg)
+    
+    def get_cluster_centers(self):
+        return self.cluster_centers
+
+    def get_cluster_centers_embedding(self):
+        return self.cluster_centers_embedding.T
+
+    def get_cluster_assocations(self):
+        return self.cluster_association
