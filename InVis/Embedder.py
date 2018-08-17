@@ -618,6 +618,7 @@ class cPCA(Embedding):
 
 
     def finished_relocating(self):
+        print self.control_points
         if len(self.control_point_indices) > 0:
             directions = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
             self.pca_projection = self.kernel_sys[0].dot(directions)
@@ -673,11 +674,17 @@ class cPCA(Embedding):
         
         
 
-
+'''FOR MLE WE HAVE INTEGRATED THE ABILITY TO EASILY SWITCH BETWEEN DIFFERENT DIMENSIONS OF PROJECTIONS'''
 
 class MLE(Embedding):
     def __init__(self, data, points, parent, dim=2):
         self.data = data
+        self.dim = dim
+        pca = decomposition.PCA(n_components=self.dim)
+        pca.fit(self.data)
+
+        print "POINTS"
+        print points
         self.control_points = []
         self.control_point_indices = []
         self.old_control_point_indices = []
@@ -690,10 +697,6 @@ class MLE(Embedding):
         self.cl = []
         self.has_ml_cl_constraints = False
 
-        self.dim = dim
-
-        pca = decomposition.PCA(n_components=self.dim)
-        pca.fit(self.data)
         self.M_base = pca.components_ # init M with PCA[1,2]
         self.M = self.M_base
         self.Psi_base = np.cov(self.data.T)
@@ -705,7 +708,8 @@ class MLE(Embedding):
         self.is_dynamic = True 
         self.probabilities = None
 
-        self.update_control_points(points)
+        self.update_control_points({})
+        self.add_adjusted_control_points(points)
 
     def update_Psi_matrix(self):
         Y = self.data[self.control_point_indices].T
@@ -723,7 +727,7 @@ class MLE(Embedding):
     def update_M_matrix(self):
         Y = self.data[self.control_point_indices].T
         W = np.array(self.control_points).T
-        W = np.resize(W, (len(self.M_base), len(Y[0])))
+        #W = np.resize(W, (len(self.M_base), len(Y[0])))
         if len(self.control_point_indices) == 0:
             self.M = self.M_base
         else:
@@ -732,13 +736,14 @@ class MLE(Embedding):
             # print "Psi:", self.Psi.shape
             # print "Y_m:", W.shape
             #self.M = self.M_base + (W - self.M_base.dot(Y)).dot(np.linalg.pinv(Y.T.dot(self.Psi).dot(Y) + self.sigma*np.eye(len(Y[0])))).dot(Y.T).dot(self.Psi)
-            print np.shape(np.array(self.data))
-            print np.shape(np.array(self.M_base))
-            print np.shape(np.array(self.Psi_base))
-            print np.shape(np.array(Y))
-            print np.shape(np.array(W))
-            print np.shape(np.array(self.M_base))
-            print np.shape(np.array((W - self.M_base.dot(Y)).dot(np.linalg.pinv(Y.T.dot(self.Psi_base).dot(Y) + self.sigma*np.eye(len(Y[0])))).dot(Y.T).dot(self.Psi_base)))
+            #print np.shape(np.array(self.data))
+            #print np.shape(np.array(self.M_base))
+            #print np.shape(np.array(self.Psi_base))
+            #print np.shape(np.array(Y))
+            #print np.shape(np.array(W))
+            print W
+            #print np.shape(np.array(self.M_base))
+            #print np.shape(np.array((W - self.M_base.dot(Y)).dot(np.linalg.pinv(Y.T.dot(self.Psi_base).dot(Y) + self.sigma*np.eye(len(Y[0])))).dot(Y.T).dot(self.Psi_base)))
             self.M = self.M_base + (W - self.M_base.dot(Y)).dot(np.linalg.pinv(Y.T.dot(self.Psi_base).dot(Y) + self.sigma*np.eye(len(Y[0])))).dot(Y.T).dot(self.Psi_base)
 
 
@@ -746,6 +751,7 @@ class MLE(Embedding):
         if X == []:
             X=self.data.T
         self.projection_matrix = self.M
+        print np.shape(self.projection_matrix)
         return self.M.dot(X)
     
 
@@ -753,6 +759,9 @@ class MLE(Embedding):
         super(MLE, self).update_control_points(points)
         print self.control_point_indices
         print self.old_control_point_indices
+        print "POINTS"
+        print points
+        print self.Y
         if set(self.control_point_indices) == self.old_control_point_indices:
             self.update_M_matrix()
         else:
@@ -763,6 +772,29 @@ class MLE(Embedding):
             self.augment_control_points(self.get_embedding().T)
             self.update_M_matrix()
             self.update_Psi_matrix()
+
+    ''' When shifting between different no of dimensions, we have to make sure all control points are correctly adjusted (difficult when
+        when increasing the number of dims.
+        This method is called from KMEANS after initialising MLE with no control points, and then readding the control points after an initial
+        embedding is calculated'''
+
+    def add_adjusted_control_points(self, points):
+        e = self.get_embedding().T
+        print np.shape(e)
+        for i, coords in points.items():
+            if(self.dim > len(coords)):
+                newPoint = e[i]
+                newPoint[0] = coords[0] 
+                newPoint[1] = coords[1]
+                points[i] = newPoint
+            elif(self.dim == len(coords)):
+                pass
+            else:
+                points[i] = points[i][0:self.dim]
+        
+        self.update_control_points(points)
+
+
 
 
 '''class KMEANS(Embedding):
@@ -933,8 +965,9 @@ class KMEANS(object):
               
         if (self.embeddingType == "MLE"):
             self.embedding = MLE(data, points, parent, dim=self.dim)
+
         elif (self.embeddingType == "kPCA"):
-            self.embedding = cPCA(data, points, parent, dim=self.dim)
+            self.embedding = cPCA(data, {}, parent, dim=self.dim)
         else:
             self.embedding = PCA(data, points, parent, dim=self.dim)
 
