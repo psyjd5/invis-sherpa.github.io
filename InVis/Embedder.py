@@ -594,18 +594,22 @@ class cPCA(Embedding):
         else:
             placement_mask = np.array(self.control_point_indices)
         self.const_mu = self.embedder.const_nu(self.params, placement_mask, self.kernel_sys)
-        self.update_control_points(points)
+
+        self.update_control_points({})
         self.finished_relocating()
-        if len(self.Y) == 0:
-            pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, label_mask, np.ones((1,self.dim)), self.kernel_sys, self.params, 1e-20)
+
+        pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, label_mask, np.ones((1,self.dim)), self.kernel_sys, self.params, 1e-20)
+        self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
+        if len(points) == 0:
+            pass
         else:
+            self.add_adjusted_control_points(points)
             for i in range(len(self.control_point_indices)):
                 self.quad_eig_sys = self.embedder.sph_cp_quad_term_eig_sys(self.kernel_sys, self.quad_eig_sys, self.control_point_indices[i], self.const_mu)
             pca_dirs = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
-        '''print "PCA_DIRS"
-        print np.shape(np.array(pca_dirs))
-        print pca_dirs'''
-        self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
+            self.pca_projection = self.kernel_sys[0].dot(pca_dirs)
+        print self.control_points
+        print self.control_point_indices
         #print "PCA_Projection"
         #print np.shape(np.array(self.pca_projection))
         #print self.pca_projection
@@ -619,6 +623,7 @@ class cPCA(Embedding):
 
     def finished_relocating(self):
         print self.control_points
+        print self.control_point_indices
         if len(self.control_point_indices) > 0:
             directions = self.embedder.soft_cp_mode_directions(self.quad_eig_sys, self.control_point_indices, self.Y, self.kernel_sys, self.params, self.const_mu)
             self.pca_projection = self.kernel_sys[0].dot(directions)
@@ -670,6 +675,24 @@ class cPCA(Embedding):
         #print "PCA_Projection"
         #print np.shape(np.array(self.pca_projection))
         #print self.pca_projection
+
+    def add_adjusted_control_points(self, points):
+        e = self.get_embedding().T
+        print np.shape(e)
+        for i, coords in points.items():
+            if(self.dim > len(coords)):
+                newPoint = e[i]
+                newPoint[0] = coords[0] 
+                newPoint[1] = coords[1]
+                points[i] = newPoint
+            elif(self.dim == len(coords)):
+                pass
+            else:
+                points[i] = points[i][0:self.dim]
+        
+        self.update_control_points(points)
+
+    
 
         
         
@@ -967,7 +990,7 @@ class KMEANS(object):
             self.embedding = MLE(data, points, parent, dim=self.dim)
 
         elif (self.embeddingType == "kPCA"):
-            self.embedding = cPCA(data, {}, parent, dim=self.dim)
+            self.embedding = cPCA(data, points, parent, dim=self.dim)
         else:
             self.embedding = PCA(data, points, parent, dim=self.dim)
 
