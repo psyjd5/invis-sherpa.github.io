@@ -1275,6 +1275,8 @@ class MainWindow(QMainWindow):
                             annotation_fontsize = int(16 - 0.2*counter)
                         else:
                             annotation_fontsize = 6
+            print self.embedding.T[highlight]
+            print np.shape(np.array(self.embedding))
             self.axes.annotate(msg, self.embedding.T[highlight], zorder=10,
                                bbox=box_style, fontsize=annotation_fontsize, 
                                xytext=(10,20), 
@@ -1352,6 +1354,7 @@ class MainWindow(QMainWindow):
         interesting_points += self.control_points.keys()
         ind = event.ind[0]
 
+        #print event.mouseevent.button
         #print "HWLLO"
         #print ind
         #print interesting_points
@@ -1406,6 +1409,8 @@ class MainWindow(QMainWindow):
 
     def on_release(self, event):
         """ On mouse key release """
+        #print "HELLO"
+        #print self.info_requests
         self.lasso_request = False
         if self.lassoLock:
             self.axes.figure.canvas.widgetlock.release(self.lasso)
@@ -1521,6 +1526,8 @@ class MainWindow(QMainWindow):
         self.axes.set_ylim(self.ylim)
         self.axes.set_aspect('auto')
         self.axes.texts = []
+        #print np.shape(np.array(self.embedding[0]))
+        #print np.shape(np.array(self.embedding[1]))
         if self.show_origin:
             self.axes.plot([0,0], [self.ylim[0], self.ylim[1]], color='k', alpha=0.08, zorder=0)
             self.axes.plot([self.xlim[0], self.xlim[1]], [0,0], color='k', alpha=0.08, zorder=0)
@@ -1532,8 +1539,10 @@ class MainWindow(QMainWindow):
                 clusterCenters = self.embedding_algorithm.get_cluster_centers_embedding()
                 clusterCenterColors = np.ndarray.tolist(np.linspace(0, 1, np.size(clusterCenters), dtype=float))
                 #clusterColor = np.ndarray.tolist(np.divide(clusters, np.full((1, len(clusters)), max(clusters))))
+                #print np.shape(np.array(clusterCenters[0]))
+                #print np.shape(np.array(clusterCenters[1]))
                 self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], color=pl.cm.brg(clusterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
-                self.scatter_plot = self.axes.scatter(clusterCenters[0], clusterCenters[1], color=pl.cm.brg(clusterCenterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity, marker="*")
+                #self.scatter_plot = self.axes.scatter(clusterCenters[0], clusterCenters[1], color=pl.cm.brg(clusterCenterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity, marker="*")
             else: 
                 if self.show_search_as_color:
                     self.colors = np.zeros(len(self.data.data))

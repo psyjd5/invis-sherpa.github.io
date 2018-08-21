@@ -29,7 +29,6 @@ try:
 except:
     pass
 
-
 class PopupSlider(QDialog):
     def __init__(self, label_text, default=4, minimum=1, maximum=20):
         QWidget.__init__(self)
@@ -71,27 +70,49 @@ class PopupSlider(QDialog):
         self.hide()
 
 class KmeansPopup(QDialog):
+
+    CURRENT_DIST_METRIC = "euclidean"
+    CURRENT_EMB = "PCA"
+    CURRENT_DIM_ID = 0
+
+    '''self.distMap = {"Euclidean":"euclidean", "Braycurtis":"braycurtis", "Canberra":"canberra",
+    "Chebyshev":"chebyshev", "Manhattan":"cityblock", "Correlation":"correlation", "Cosine":"cosine",
+    "Hamming":"hamming", "Jaccard":"jaccard","Mahalanobis":"mahalanobis", "Minkowski":"minkowski",
+    "Standard Euclidean":"seuclidean", "Squared Euclidean":"sqeuclidean"}'''
+
+    distSelectionOptions = ["Euclidean", "Braycurtis", "Canberra", "Chebyshev", "Manhattan",
+    "Correlation", "Cosine", "Hamming", "Jaccard", "Mahalanobis", "Minkowski", "Standard Euclidean", "Squared Euclidean"]
+    distSelectionValues = ["euclidean", "braycurtis", "canberra", "chebyshev", "cityblock",
+    "correlation", "cosine", "hamming", "jaccard", "mahalanobis", "minkowski", "seuclidean", "sqeuclidean"]
+
+    EmbSelectionOptions = ["PCA", "kPCA", "MLE"]
+
+    dimSelectionOptions = ["4", "7"]
+
     def __init__(self, default=4, minimum=1, maximum=20):
+        print KmeansPopup.CURRENT_DIST_METRIC
+        print id(KmeansPopup.CURRENT_DIST_METRIC)
         QWidget.__init__(self)
+        self.distComboBoxString = KmeansPopup.CURRENT_DIST_METRIC
+        self.embComboBoxString = KmeansPopup.CURRENT_EMB
+        self.dimRadioString = KmeansPopup.dimSelectionOptions[KmeansPopup.CURRENT_DIM_ID]
         self.sliderValue = default
-        self.comboBoxString = "euclidean"
-        self.distMap = {"Euclidean":"euclidean", "Braycurtis":"braycurtis", "Canberra":"canberra",
-        "Chebyshev":"chebyshev", "Manhattan":"cityblock", "Correlation":"correlation", "Cosine":"cosine",
-        "Hamming":"hamming", "Jaccard":"jaccard","Mahalanobis":"mahalanobis", "Minkowski":"minkowski",
-        "Standard Euclidean":"seuclidean", "Squared Euclidean":"sqeuclidean"}
 
         self.layout =  QGridLayout(self)
 
         self.distSelectLbl = QLabel()
         self.distSelectLbl.setText("Select Preferred Distance Function")
         self.distSelect = QComboBox()
-        self.distSelect.addItems(self.distMap.keys())
-        self.distSelect.currentIndexChanged.connect(self.selectionChange)
+        self.distSelect.addItems(KmeansPopup.distSelectionOptions)
+        self.distSelect.currentIndexChanged.connect(self.distSelectionChange)
+        self.distSelect.setCurrentIndex(KmeansPopup.distSelectionValues.index(KmeansPopup.CURRENT_DIST_METRIC))
 
-        self.projectionTypeLbl = QLabel()
-        self.projectionTypeLbl.setText("Select Preferred Embedding")
-        self.projectionType = QComboBox()
-        self.projectionType.addItems(["PCA", "kPCA", "MLE"])
+        self.EmbTypeLbl = QLabel()
+        self.EmbTypeLbl.setText("Select Preferred Embedding")
+        self.EmbType = QComboBox()
+        self.EmbType.addItems(KmeansPopup.EmbSelectionOptions)
+        self.EmbType.currentIndexChanged.connect(self.embSelectionChange)
+        self.EmbType.setCurrentIndex(KmeansPopup.EmbSelectionOptions.index(KmeansPopup.CURRENT_EMB))
 
         self.projectionNumberLbl = QLabel()
         self.projectionNumberLbl.setText("Select Projection Level")
@@ -101,11 +122,16 @@ class KmeansPopup(QDialog):
         self.radio1 = QRadioButton("4")
         self.radio2 = QRadioButton("7")
 
-        self.radio1.setChecked(True)
-
         self.radioGroup = QButtonGroup()
         self.radioGroup.addButton(self.radio1)
         self.radioGroup.addButton(self.radio2)
+        self.radioGroup.setId(self.radio1, 0)
+        self.radioGroup.setId(self.radio2, 1)
+
+        print KmeansPopup.CURRENT_DIM_ID
+        self.radioGroup.button(KmeansPopup.CURRENT_DIM_ID).setChecked(True)
+
+        self.radioGroup.buttonClicked[int].connect(self.dimSelectionChange)
 
         self.vbox = QVBoxLayout()
         self.vbox.addWidget(self.radio1)
@@ -131,8 +157,8 @@ class KmeansPopup(QDialog):
 
         self.layout.addWidget(self.distSelectLbl,1,1)
         self.layout.addWidget(self.distSelect,1,2)
-        self.layout.addWidget(self.projectionTypeLbl, 2,1)
-        self.layout.addWidget(self.projectionType, 2,2)
+        self.layout.addWidget(self.EmbTypeLbl, 2,1)
+        self.layout.addWidget(self.EmbType, 2,2)
         self.layout.addWidget(self.clusterNumberLbl,3,1)
         self.layout.addWidget(self.slider,3,2)
         self.layout.addWidget(self.valueLabel,3,3)
@@ -151,13 +177,17 @@ class KmeansPopup(QDialog):
     def handleButton(self):
         self.hide()
 
-    def selectionChange(self):
-        self.comboBoxString = self.distMap[str(self.distSelect.currentText())]
+    def distSelectionChange(self):
+        self.distComboBoxString = KmeansPopup.distSelectionValues[KmeansPopup.distSelectionOptions.index(str(self.distSelect.currentText()))]
+        KmeansPopup.CURRENT_DIST_METRIC = self.distComboBoxString
+    
+    def embSelectionChange(self):
+        self.embComboBoxString = self.EmbType.currentText()
+        KmeansPopup.CURRENT_EMB = self.embComboBoxString
 
-
-
-
-
+    def dimSelectionChange(self, ind):
+        self.dimRadioString = KmeansPopup.dimSelectionOptions[ind]
+        KmeansPopup.CURRENT_DIM_ID = ind
 
 
 class Embedding(object):
@@ -846,7 +876,7 @@ class MLE(Embedding):
         self.kmInput = KmeansPopup()
         self.kmInput.exec_()
         self.num = int(self.kmInput.sliderValue)
-        self.met = str(self.kmInput.comboBoxString)
+        self.met = str(self.kmInput.distComboBoxString)
         self.dim = int(self.kmInput.radioGroup.checkedButton().text())
         
         self.params = {'r' : 3.0, 'slv_mode' : 'secular', 'sigma' : None, 'epsilon' : 0.5, 'degree' : 1}
@@ -956,7 +986,7 @@ class KMEANS(EmbeddingContainer):
         self.kmInput = KmeansPopup()
         self.kmInput.exec_()
         self.num = int(self.kmInput.sliderValue)
-        self.met = str(self.kmInput.comboBoxString)
+        self.met = str(self.kmInput.distComboBoxString)
         self.dim = int(self.kmInput.radioGroup.checkedButton().text())
         self.emb = str(self.kmInput.projectionType.currentText())
 
@@ -978,9 +1008,13 @@ class KMEANS(object):
         self.kmInput = KmeansPopup()
         self.kmInput.exec_()
         self.num = int(self.kmInput.sliderValue)
-        self.met = str(self.kmInput.comboBoxString)
-        self.dim = int(self.kmInput.radioGroup.checkedButton().text())
-        self.embeddingType = str(self.kmInput.projectionType.currentText())
+        self.met = str(self.kmInput.distComboBoxString)
+        self.dim = int(self.kmInput.dimRadioString)
+        self.embeddingType = str(self.kmInput.embComboBoxString)
+        print self.num
+        print self.met
+        print self.dim
+        print self.embeddingType
 
         self.cluster_association = []
         self.cluster_centers = []
@@ -988,15 +1022,22 @@ class KMEANS(object):
               
         if (self.embeddingType == "MLE"):
             self.embedding = MLE(data, points, parent, dim=self.dim)
-
         elif (self.embeddingType == "kPCA"):
             self.embedding = cPCA(data, points, parent, dim=self.dim)
         else:
             self.embedding = PCA(data, points, parent, dim=self.dim)
 
         self.is_dynamic = self.embedding.is_dynamic
+        self.name = self.embedding.name
+        self.finished_relocating()
 
     def get_embedding(self):
+        embed = self.embedding.get_embedding()
+        #print np.shape(embed)
+        embed = np.delete(embed, range(2,np.shape(embed)[0]), axis=0)
+        return embed
+
+    def get_embedding_up_too_dim(self):
         embed = self.embedding.get_embedding()
         if (self.cluster_association == []):
             self.run_kmeans(embed.T, self.num, self.met)
@@ -1012,7 +1053,7 @@ class KMEANS(object):
 
     def finished_relocating(self):
         relocate = self.embedding.finished_relocating()
-        embed = self.embedding.get_embedding()
+        embed = self.get_embedding_up_too_dim()
         self.run_kmeans(embed.T, self.num, self.met)
         return relocate
 
