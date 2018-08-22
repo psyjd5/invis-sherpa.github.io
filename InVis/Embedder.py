@@ -1029,15 +1029,9 @@ class KMEANS(object):
 
         self.is_dynamic = self.embedding.is_dynamic
         self.name = self.embedding.name
-        self.get_embedding_up_too_dim()
+        self.get_embedding()
 
     def get_embedding(self):
-        embed = self.embedding.get_embedding()
-        #print np.shape(embed)
-        embed = np.delete(embed, range(2,np.shape(embed)[0]), axis=0)
-        return embed
-
-    def get_embedding_up_too_dim(self):
         embed = self.embedding.get_embedding()
         if (self.cluster_association == []):
             self.run_kmeans(embed.T, self.num, self.met)
@@ -1056,12 +1050,12 @@ class KMEANS(object):
         return relocate
 
     def recluster(self):
-        embed = self.get_embedding_up_too_dim()
+        embed = self.get_embedding()
         self.run_kmeans(embed.T, self.num, self.met)
 
     def run_kmeans(self, data, num, met):
         try:    
-            km = kmeans.Kmeans(self.embedding.get_embedding().T, k=num, nsample=50, delta=.001, maxiter=100, verbose=0, metric=met)
+            km = kmeans.Kmeans(data, k=num, nsample=50, delta=.001, maxiter=100, verbose=0, metric=met)
             self.cluster_association = km.Xtocentre
             self.cluster_centers = km.centres
             self.cluster_centers_embedding = self.cluster_centers

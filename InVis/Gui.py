@@ -29,6 +29,7 @@ class MainWindow(QMainWindow):
         self.cwd = os.path.dirname(os.path.realpath(__file__))
         self.cwd = os.path.join(self.cwd,"ressources")
         self.embedding = None
+        self.restrictedDimEmbedding = None
         self.embedding_algorithm = None
         self.framesize = 3
         self.xlim = [-3,3]
@@ -1284,7 +1285,8 @@ class MainWindow(QMainWindow):
                             annotation_fontsize = 6
             print self.embedding.T[highlight]
             print np.shape(np.array(self.embedding))
-            self.axes.annotate(msg, self.embedding.T[highlight], zorder=10,
+
+            self.axes.annotate(msg, self.restrictedDimEmbedding.T[highlight], zorder=10,
                                bbox=box_style, fontsize=annotation_fontsize, 
                                xytext=(10,20), 
                                textcoords='offset points', 
@@ -1533,6 +1535,7 @@ class MainWindow(QMainWindow):
         """ Renders the embedding """
         self.axes.clear()
         self.embedding = self.embedding_algorithm.get_embedding()
+        self.restrictedDimEmbedding = np.delete(self.embedding, range(2,np.shape(self.embedding)[0]), axis=0)
         self.axes.set_xlim(self.xlim)
         self.axes.set_ylim(self.ylim)
         self.axes.set_aspect('auto')
