@@ -125,17 +125,17 @@ class MainWindow(QMainWindow):
         
         # configure the attribute list
         self.series_list_view = QListView()
-        self.series_list_view.setMaximumWidth(310)
-        self.series_list_view.setMinimumWidth(310)
+        self.series_list_view.setMaximumWidth(360)
+        self.series_list_view.setMinimumWidth(360)
         self.series_list_view.setModel(self.series_list_model)
         
         # configure the label field in the GUI
         self.target_label = QLabel("Attribute used for coloring:")
-        self.target_label.setMaximumWidth(310)
-        self.target_label.setMinimumWidth(310)
+        self.target_label.setMaximumWidth(360)
+        self.target_label.setMinimumWidth(360)
         self.label_text_field = QLineEdit("")
-        self.label_text_field.setMaximumWidth(310)
-        self.label_text_field.setMinimumWidth(310)
+        self.label_text_field.setMaximumWidth(360)
+        self.label_text_field.setMinimumWidth(360)
 
         # configure the colorize by next label button in the GUI
         self.next_label_button = QPushButton()
@@ -145,7 +145,7 @@ class MainWindow(QMainWindow):
         
         # configure the search field in the GUI
         self.search_text_field = QLineEdit("", placeholderText="Search")
-        self.search_text_field.setMaximumWidth(310)
+        self.search_text_field.setMaximumWidth(360)
 
         # configure the colorize by next label button in the GUI
         self.select_search_button = QPushButton()
@@ -153,15 +153,15 @@ class MainWindow(QMainWindow):
         self.select_search_button.setIcon(QIcon(os.path.join(self.cwd,"lasso.png")))
         self.select_search_button.setMaximumWidth(50)
 
-        self.search_text_field.setMinimumWidth(310)
+        self.search_text_field.setMinimumWidth(360)
 
         # configure the (de)select all button in the GUI
         self.select_button = QPushButton("(De-)&Select all", shortcut="Ctrl+S")
-        self.select_button.setMaximumWidth(310)
+        self.select_button.setMaximumWidth(360)
 
         # configure the update button
         self.update_button = QPushButton("Update", shortcut="Ctrl+U")
-        self.update_button.setMaximumWidth(310)
+        self.update_button.setMaximumWidth(360)
 
         # configure the info button in the GUI
         self.info_button = QPushButton(shortcut="Ctrl+I")
@@ -205,6 +205,11 @@ class MainWindow(QMainWindow):
         self.ml_cl_button.setIcon(QIcon(os.path.join(self.cwd,"ml_cl.png")))
         self.ml_cl_button.setMaximumWidth(50)
 
+        self.cluster_button = QPushButton()
+        self.cluster_button.setToolTip("Generate New Clustering")
+        self.cluster_button.setIcon(QIcon(os.path.join(self.cwd,"cluster.png")))
+        self.cluster_button.setMaximumWidth(50)
+
         # configure the layout of all the elements
         grid = QGridLayout()
         # grid.setSpacing(20)
@@ -227,6 +232,7 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.lasso_button,         8,35,  1,1, Qt.AlignRight)
         grid.addWidget(self.cut_button,           8,36,  1,1, Qt.AlignRight)
         grid.addWidget(self.clear_button,         8,37,  1,1, Qt.AlignRight)
+        grid.addWidget(self.cluster_button,       8,38,  1,1, Qt.AlignRight)
 
         self.main_frame.setLayout(grid)
         self.setCentralWidget(self.main_frame)
@@ -257,6 +263,7 @@ class MainWindow(QMainWindow):
         self.connect(self.lasso_button, SIGNAL('clicked()'), self.set_lasso_request)
         self.connect(self.cut_button, SIGNAL('clicked()'), self.toggle_data_filter)
         self.connect(self.clear_button, SIGNAL('clicked()'), self.clear)
+        self.connect(self.cluster_button, SIGNAL('clicked()'), self.recluster)
         # connect the attribute list's checkboxes
         self.series_list_model.itemChanged.connect(self.attributes_updated)
 
@@ -1517,6 +1524,10 @@ class MainWindow(QMainWindow):
         if self.data.data != []:
             self.update()
 
+    def recluster(self):
+        if self.clustering:
+            self.embedding_algorithm.recluster()
+            self.update()
 
     def update(self):
         """ Renders the embedding """

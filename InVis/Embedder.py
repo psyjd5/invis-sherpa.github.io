@@ -1029,7 +1029,7 @@ class KMEANS(object):
 
         self.is_dynamic = self.embedding.is_dynamic
         self.name = self.embedding.name
-        self.finished_relocating()
+        self.get_embedding_up_too_dim()
 
     def get_embedding(self):
         embed = self.embedding.get_embedding()
@@ -1053,9 +1053,11 @@ class KMEANS(object):
 
     def finished_relocating(self):
         relocate = self.embedding.finished_relocating()
+        return relocate
+
+    def recluster(self):
         embed = self.get_embedding_up_too_dim()
         self.run_kmeans(embed.T, self.num, self.met)
-        return relocate
 
     def run_kmeans(self, data, num, met):
         try:    
