@@ -10,6 +10,8 @@ from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.widgets import Lasso
 from scipy.spatial import distance
+from scipy.stats import linregress
+from math import atan
 from Embedder import *
 from collections import defaultdict
 from re import findall
@@ -80,9 +82,14 @@ class MainWindow(QMainWindow):
         self.point_size_is_set_variable = False
         self.dummies = []
 
+        '''self.cluster_centre = 0
+        self.cluster_dim = 0
+        self.cluster_angle = 0'''
+
         self.info_request = False
         self.cp_select_request = False
         self.lasso_request = False
+        self.cluster_request = False
         self.image_displayer = self.create_tag_cloud
 
         self.scatter_plot = None
@@ -126,17 +133,17 @@ class MainWindow(QMainWindow):
         
         # configure the attribute list
         self.series_list_view = QListView()
-        self.series_list_view.setMaximumWidth(360)
-        self.series_list_view.setMinimumWidth(360)
+        self.series_list_view.setMaximumWidth(310)
+        self.series_list_view.setMinimumWidth(310)
         self.series_list_view.setModel(self.series_list_model)
         
         # configure the label field in the GUI
         self.target_label = QLabel("Attribute used for coloring:")
-        self.target_label.setMaximumWidth(360)
-        self.target_label.setMinimumWidth(360)
+        self.target_label.setMaximumWidth(310)
+        self.target_label.setMinimumWidth(310)
         self.label_text_field = QLineEdit("")
-        self.label_text_field.setMaximumWidth(360)
-        self.label_text_field.setMinimumWidth(360)
+        self.label_text_field.setMaximumWidth(310)
+        self.label_text_field.setMinimumWidth(310)
 
         # configure the colorize by next label button in the GUI
         self.next_label_button = QPushButton()
@@ -146,7 +153,7 @@ class MainWindow(QMainWindow):
         
         # configure the search field in the GUI
         self.search_text_field = QLineEdit("", placeholderText="Search")
-        self.search_text_field.setMaximumWidth(360)
+        self.search_text_field.setMaximumWidth(310)
 
         # configure the colorize by next label button in the GUI
         self.select_search_button = QPushButton()
@@ -154,15 +161,15 @@ class MainWindow(QMainWindow):
         self.select_search_button.setIcon(QIcon(os.path.join(self.cwd,"lasso.png")))
         self.select_search_button.setMaximumWidth(50)
 
-        self.search_text_field.setMinimumWidth(360)
+        self.search_text_field.setMinimumWidth(310)
 
         # configure the (de)select all button in the GUI
         self.select_button = QPushButton("(De-)&Select all", shortcut="Ctrl+S")
-        self.select_button.setMaximumWidth(360)
+        self.select_button.setMaximumWidth(310)
 
         # configure the update button
         self.update_button = QPushButton("Update", shortcut="Ctrl+U")
-        self.update_button.setMaximumWidth(360)
+        self.update_button.setMaximumWidth(310)
 
         # configure the info button in the GUI
         self.info_button = QPushButton(shortcut="Ctrl+I")
@@ -206,15 +213,25 @@ class MainWindow(QMainWindow):
         self.ml_cl_button.setIcon(QIcon(os.path.join(self.cwd,"ml_cl.png")))
         self.ml_cl_button.setMaximumWidth(50)
 
-        self.cluster_button = QPushButton()
-        self.cluster_button.setToolTip("Generate New Clustering")
-        self.cluster_button.setIcon(QIcon(os.path.join(self.cwd,"cluster.png")))
-        self.cluster_button.setMaximumWidth(50)
+        # configure the label field in the GUI
+        self.clustering_label = QLabel("Clustering Only:")
+        self.clustering_label.setMaximumWidth(310)
+        self.clustering_label.setMinimumWidth(310)
+
+        self.generate_button = QPushButton(shortcut="Ctrl+K")
+        self.generate_button.setToolTip("Generate New Clustering <Ctrl+K>")
+        self.generate_button.setIcon(QIcon(os.path.join(self.cwd,"cluster.png")))
+        self.generate_button.setMaximumWidth(50)
+
+        self.select_cluster_button = QPushButton(shortcut="Ctrl+K")
+        self.select_cluster_button.setToolTip("Select a Cluster")
+        #self.generate_button.setIcon(QIcon(os.path.join(self.cwd,"cluster.png")))
+        self.select_cluster_button.setMaximumWidth(50)
 
         # configure the layout of all the elements
         grid = QGridLayout()
         # grid.setSpacing(20)
-        grid.addWidget(self.canvas,               1,1,  8,30) # <--- Here the matplotlib figure gets build in!!!
+        grid.addWidget(self.canvas,               1,1,  10,30) # <--- Here the matplotlib figure gets build in!!!
 
         grid.addWidget(self.select_button,        1,31,  1, -1, Qt.AlignLeft) 
         grid.addWidget(self.update_button,        1,31,  1,-1, Qt.AlignRight) 
@@ -233,7 +250,10 @@ class MainWindow(QMainWindow):
         grid.addWidget(self.lasso_button,         8,35,  1,1, Qt.AlignRight)
         grid.addWidget(self.cut_button,           8,36,  1,1, Qt.AlignRight)
         grid.addWidget(self.clear_button,         8,37,  1,1, Qt.AlignRight)
-        grid.addWidget(self.cluster_button,       8,38,  1,1, Qt.AlignRight)
+
+        grid.addWidget(self.clustering_label,      9,31,  1,-1, Qt.AlignRight)
+        grid.addWidget(self.generate_button,       10,31, 1,1,  Qt.AlignRight)
+        grid.addWidget(self.select_cluster_button, 10,32, 1,1,  Qt.AlignRight)
 
         self.main_frame.setLayout(grid)
         self.setCentralWidget(self.main_frame)
@@ -264,7 +284,8 @@ class MainWindow(QMainWindow):
         self.connect(self.lasso_button, SIGNAL('clicked()'), self.set_lasso_request)
         self.connect(self.cut_button, SIGNAL('clicked()'), self.toggle_data_filter)
         self.connect(self.clear_button, SIGNAL('clicked()'), self.clear)
-        self.connect(self.cluster_button, SIGNAL('clicked()'), self.recluster)
+        self.connect(self.generate_button, SIGNAL('clicked()'), self.recluster)
+        self.connect(self.select_cluster_button, SIGNAL('clicked()'), self.set_cluster_request)
         # connect the attribute list's checkboxes
         self.series_list_model.itemChanged.connect(self.attributes_updated)
 
@@ -318,6 +339,16 @@ class MainWindow(QMainWindow):
         else:
             self.lasso_button.setIcon(QIcon(os.path.join(self.cwd,"lasso.png")))
 
+    def set_cluster_request(self):
+        if self.clustering:
+            self.cluster_request = not self.cluster_request
+            if self.cluster_request == True:
+                pass
+                #self.lasso_button.setIcon(QIcon(os.path.join(self.cwd,"lasso_active.png")))
+            else:
+                pass
+                #self.lasso_button.setIcon(QIcon(os.path.join(self.cwd,"lasso.png")))
+
 
     def create_menu(self):  
         """ Create the menu in the GUI """      
@@ -365,6 +396,12 @@ class MainWindow(QMainWindow):
         mle_selection       = self.prepare_menu_entry("    MLE", slot=self.select_mle, tip="Maximum Likelihood Embedding")
         self.add_menu_entry(self.projection_algorithm, (static_label, static_xy, static_pca, static_kmeans, static_lle, static_iso, static_mds, static_ica, static_tsne, None, interactive_label, lsp_selection, kb_pca_selection, mle_selection))
         
+        '''TO BE EDITED'''
+        self.clustering_menu = self.menuBar().addMenu("&Clustering")
+        clustering_off    = self.prepare_menu_entry("    OFF", shortcut=None)
+        kmeans_clustering = self.prepare_menu_entry("    KMEANS++", shortcut=None)
+        self.add_menu_entry(self.clustering_menu, (clustering_off, kmeans_clustering))
+
         self.view_menu = self.menuBar().addMenu("&View")
         color_scheme_label = self.prepare_menu_entry('Color schemes:', greyed_out=True)
         colormap_ryg       = self.prepare_menu_entry("    Red, Yellow, Green", shortcut=None, slot=self.set_color_RdYlGn, tip=None)
@@ -1079,11 +1116,30 @@ class MainWindow(QMainWindow):
         """ Finds all points inside the lasso-selected area """
         self.path = matplotlib.path.Path(verts)
         ind = np.nonzero([self.path.contains_point(xy) for xy in self.embedding.T])[0]
+        #print ind
         self.lassoed_points = ind
         if len(self.lassoed_points) > 1:
             self.image_displayer()
             self.center_ind = self.get_geometric_median_index_of_index_set(self.lassoed_points)
         self.axes.figure.canvas.widgetlock.release(self.lasso)
+
+    def cluster_selected(self, ind):
+        clusters = self.embedding_algorithm.get_cluster_assocations()
+        self.lassoed_points = [i for i, x in enumerate(clusters) if x == clusters[ind]]
+        #x = [self.restrictedDimEmbedding[0][index] for index in self.lassoed_points]
+        #y = [self.restrictedDimEmbedding[1][index] for index in self.lassoed_points]
+        #points = np.vstack((x,y))
+        #self.cluster_centre = np.mean(points, axis=1)
+        #self.cluster_dim = np.ptp(points, axis=1)
+        #rint self.cluster_dim
+        '''print centre
+        print ff
+        print x
+        print y'''
+        #lin = linregress(x,y)[0]
+        #self.cluster_angle = atan(lin)
+        self.image_displayer()
+        self.set_cluster_request()
 
 
     def generate_discretization_splits(self):
@@ -1217,7 +1273,7 @@ class MainWindow(QMainWindow):
             for i,amount in enumerate(self.data.original_data[self.center_ind][:-1]):
                 if amount > 0.0:
                     msg += "\n  %.2f - %s" %(amount, self.data.attribute_names[i])
-            self.axes.annotate(msg, self.embedding.T[self.center_ind], zorder=10,
+            self.axes.annotate(msg, self.restrictedDimEmbedding.T[self.center_ind], zorder=10,
                                bbox=box_style, fontsize=14, 
                                xytext=(10,20), 
                                textcoords='offset points', 
@@ -1235,7 +1291,7 @@ class MainWindow(QMainWindow):
             font = pl.matplotlib.font_manager.FontProperties(family='monospace', size = 10)
             for highlight in self.searched_results:
                 msg = self.data.instance_names[highlight]
-                self.axes.annotate(msg, self.embedding.T[highlight], zorder=10,
+                self.axes.annotate(msg, self.restrictedDimEmbedding.T[highlight], zorder=10,
                                    bbox=box_style, fontsize=14,
                                    xytext=(30,-5), 
                                    textcoords='offset points', 
@@ -1383,6 +1439,8 @@ class MainWindow(QMainWindow):
                 self.embedding_algorithm.update_control_points(self.control_points)
                 if self.uncertainty_coloring_flag == True:
                     self.color_by_uncertainty()
+            elif self.cluster_request:
+                self.cluster_selected(ind)
             elif self.shift_click:
                 self.toggle([ind])
                 self.embedding_algorithm.update_control_points(self.control_points)
@@ -1556,7 +1614,7 @@ class MainWindow(QMainWindow):
                 #print np.shape(np.array(clusterCenters[0]))
                 #print np.shape(np.array(clusterCenters[1]))
                 self.scatter_plot = self.axes.scatter(self.embedding[0], self.embedding[1], color=pl.cm.brg(clusterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity)
-                #self.scatter_plot = self.axes.scatter(clusterCenters[0], clusterCenters[1], color=pl.cm.brg(clusterCenterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity, marker="*")
+                self.scatter_plot = self.axes.scatter(clusterCenters[0], clusterCenters[1], color=pl.cm.brg(clusterCenterColors), picker=self.pick_sensitivity, edgecolor=(0.3,0.3,0.3,0.2), s=self.point_size, zorder=2, alpha=self.opacity, marker="*")
             else: 
                 if self.show_search_as_color:
                     self.colors = np.zeros(len(self.data.data))
@@ -1584,6 +1642,8 @@ class MainWindow(QMainWindow):
             self.axes.scatter(self.embedding[0][self.lassoed_points], self.embedding[1][self.lassoed_points], color='k', s=self.point_size, facecolor='none', edgecolor='k', linewidth=2, zorder=10, alpha=0.3)
             if self.path != None:
                 self.axes.add_patch(patches.PathPatch(self.path, color='k', lw=0, alpha=0.2, zorder=0))
+            if self.clustering:
+                pass#self.axes.add_patch(patches.Ellipse(self.cluster_centre, self.cluster_dim[0], self.cluster_dim[1], self.cluster_angle, color='k', lw=0, alpha=0.2, zorder=0))
         if self.show_links:
             for link in self.must_link:
                 self.axes.plot(self.embedding[0][list(link)], self.embedding[1][list(link)], 'g-', alpha=0.5)
