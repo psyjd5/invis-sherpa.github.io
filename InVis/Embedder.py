@@ -920,18 +920,22 @@ class Clusterer(object):
         return self.cluster_association
 
 class KMEANS(object):
-    def __init__(self, data, points, parent):
+    def __init__(self, data, points, parent, emb="MLE"):
         self.parent = parent
-        self.kmInput = KmeansPopup()
-        self.kmInput.exec_()
-        self.num = int(self.kmInput.sliderValue)
+        #self.kmInput = KmeansPopup()
+        #self.kmInput.exec_()
+        self.embeddingType = emb
+        self.num = 3
+        self.dim = 4
+        self.met = "euclidean"
+        '''self.num = int(self.kmInput.sliderValue)
         self.met = str(self.kmInput.distComboBoxString)
         self.dim = int(self.kmInput.dimRadioString)
         self.embeddingType = str(self.kmInput.embComboBoxString)
         print self.num
         print self.met
         print self.dim
-        print self.embeddingType
+        print self.embeddingType'''
 
         self.cluster_association = []
         self.cluster_centers = []
