@@ -140,6 +140,8 @@ class InVis(MainWindow):
             self.data.read_in_data(filename)
             self.status_text.setText("Loaded " + filename)
             self.set_checkable_menu_selection(True)
+            self.mle_selection.setChecked(True)
+            self.clustering_off.setChecked(True)
             self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (MLE)')
             self.mask = np.ones(len(self.data.data)).astype(bool)
             self.fill_attribute_list(self.data.attribute_names)

@@ -847,87 +847,17 @@ class MLE(Embedding):
         
         self.update_control_points(points)
 
-class Clusterer(object):
-    def __init__(self, data, points, parent):
-        self.name = ""
+class CLUSTER_OVERLAY(object):
+    def __init__(self, data, points, parent, emb="MLE", cls="KMEANS"):
         self.parent = parent
         #self.kmInput = KmeansPopup()
         #self.kmInput.exec_()
-        #self.num = int(self.kmInput.sliderValue)
-        #self.met = str(self.kmInput.distComboBoxString)
-        #self.dim = int(self.kmInput.dimRadioString)
-        self.embeddingType = str(self.kmInput.embComboBoxString)
-        print self.num
-        print self.met
-        print self.dim
-        print self.embeddingType
-
-        self.cluster_association = []
-        self.cluster_centers = []
-        self.cluster_centers_embedding = []
-              
-        if (self.embeddingType == "MLE"):
-            self.embedding = MLE(data, points, parent, dim=self.dim)
-        elif (self.embeddingType == "kPCA"):
-            self.embedding = cPCA(data, points, parent, dim=self.dim)
-        else:
-            self.embedding = PCA(data, points, parent, dim=self.dim)
-
-        self.is_dynamic = self.embedding.is_dynamic
-        self.name = self.embedding.name
-        self.get_embedding()
-
-    def get_embedding(self):
-        embed = self.embedding.get_embedding()
-        if (self.cluster_association == []):
-            self.run_kmeans(embed.T, self.num, self.met)
-        return embed
-
-    def update_must_and_cannot_link(self, ml, cl):
-        self.embedding.update_must_and_cannot_link(ml,cl)
-
-    def update_control_points(self, points):
-        self.embedding.update_control_points(points)
-        #embed = self.embedding.get_embedding()
-        #self.run_kmeans(embed.T, self.num, self.met)
-
-    def finished_relocating(self):
-        relocate = self.embedding.finished_relocating()
-        return relocate
-
-    def recluster(self):
-        embed = self.get_embedding()
-        self.run_kmeans(embed.T, self.num, self.met)
-
-    def run_kmeans(self, data, num, met):
-        try:    
-            km = kmeans.Kmeans(data, k=num, nsample=50, delta=.001, maxiter=100, verbose=0, metric=met)
-            self.cluster_association = km.Xtocentre
-            self.cluster_centers = km.centres
-            self.cluster_centers_embedding = self.cluster_centers
-        except:
-            msg = "It seems like the embedding algorithm did not converge with the given parameter setting"
-            QMessageBox.about(self.parent, "Embedding error", msg)
-            
-    
-    def get_cluster_centers(self):
-        return self.cluster_centers
-
-    def get_cluster_centers_embedding(self):
-        return self.cluster_centers_embedding.T
-
-    def get_cluster_assocations(self):
-        return self.cluster_association
-
-class KMEANS(object):
-    def __init__(self, data, points, parent, emb="MLE"):
-        self.parent = parent
-        #self.kmInput = KmeansPopup()
-        #self.kmInput.exec_()
-        self.embeddingType = emb
         self.num = 3
         self.dim = 4
         self.met = "euclidean"
+        self.cls = cls
+        self.data = data
+        self.points = points
         '''self.num = int(self.kmInput.sliderValue)
         self.met = str(self.kmInput.distComboBoxString)
         self.dim = int(self.kmInput.dimRadioString)
@@ -940,22 +870,41 @@ class KMEANS(object):
         self.cluster_association = []
         self.cluster_centers = []
         self.cluster_centers_embedding = []
-              
-        if (self.embeddingType == "MLE"):
-            self.embedding = MLE(data, points, parent, dim=self.dim)
-        elif (self.embeddingType == "kPCA"):
-            self.embedding = cPCA(data, points, parent, dim=self.dim)
-        else:
-            self.embedding = PCA(data, points, parent, dim=self.dim)
+
+        self.set_embedding_type(emb)
 
         self.is_dynamic = self.embedding.is_dynamic
         self.name = self.embedding.name
         self.get_embedding()
+        self.generate_cluster()
+
+    def set_embedding_type(self, emb):
+        self.embeddingType = emb
+        if (self.embeddingType == "XY"):
+            self.embedding = XY(self.data, self.points, self.parent)
+        elif (self.embeddingType == "PCA"):
+            self.embedding = PCA(self.data, self.points, self.parent, dim=self.dim)    
+        elif (self.embeddingType == "LLE"):
+            self.embedding = LLE(self.data, self.points, self.parent)
+        elif (self.embeddingType == "ISO"):
+            self.embedding = ISO(self.data, self.points, self.parent)
+        elif (self.embeddingType == "MDS"):
+            self.embedding = MDS(self.data, self.points, self.parent)
+        elif (self.embeddingType == "ICA"):
+            self.embedding = ICA(self.data, self.points, self.parent)
+        elif (self.embeddingType == "TSNE"):
+            self.embedding = tSNE(self.data, self.points, self.parent)
+        elif (self.embeddingType == "LSP"):
+            self.embedding = LSP(self.data, self.points, self.parent)    
+        elif (self.embeddingType == "MLE"):
+            self.embedding = MLE(self.data, self.points, self.parent, dim=self.dim)
+        elif (self.embeddingType == "kPCA"):
+            self.embedding = cPCA(self.data, self.points, self.parent, dim=self.dim)
+        else:
+            self.embedding = PCA(self.data, self.points, self.parent, dim=self.dim)
 
     def get_embedding(self):
         embed = self.embedding.get_embedding()
-        if (self.cluster_association == []):
-            self.run_kmeans(embed.T, self.num, self.met)
         return embed
 
     def update_must_and_cannot_link(self, ml, cl):
@@ -970,9 +919,12 @@ class KMEANS(object):
         relocate = self.embedding.finished_relocating()
         return relocate
 
-    def recluster(self):
+    def generate_cluster(self):
         embed = self.get_embedding()
-        self.run_kmeans(embed.T, self.num, self.met)
+        if (self.cls == "KMEANS"):
+            self.run_kmeans(embed.T, self.num, self.met)
+        else:
+            self.run_kmeans(embed.T, self.num, self.met) # DEFAULT CLUSTERING
 
     def run_kmeans(self, data, num, met):
         try:    
