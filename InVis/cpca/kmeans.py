@@ -112,7 +112,10 @@ def kmeansplus(X, k, **kwargs):
     distanceSqrdAdjust = np.array([])
     for i in range(k-1):
         distanceSqrd = np.amax(np.square(cdist(X, cli, metric)), axis=1)
-        distanceSqrdAdjust = distanceSqrd/distanceSqrd.sum()
+        if (distanceSqrd.sum() != 0):
+            distanceSqrdAdjust = distanceSqrd/distanceSqrd.sum()
+        else:
+            distanceSqrdAdjust = np.zeros(np.shape(distanceSqrd))
         cli = np.append(cli, [X[np.random.choice(np.arange(dataSize), p=distanceSqrdAdjust)]], axis=0)
     
     return kmeans(X, cli, **kwargs)

@@ -82,9 +82,9 @@ class MainWindow(QMainWindow):
         self.point_size_is_set_variable = False
         self.dummies = []
 
-        '''self.cluster_centre = 0
-        self.cluster_dim = 0
-        self.cluster_angle = 0'''
+        self.cluster_dim = 2
+        self.cluster_num = 3
+        self.cluster_met = "euclidean"
 
         self.info_request = False
         self.cp_select_request = False
@@ -422,13 +422,14 @@ class MainWindow(QMainWindow):
         
         '''TO BE EDITED'''
         self.clustering_menu = self.menuBar().addMenu("&Clustering")
-        self.clustering_off    = self.prepare_menu_entry("    OFF", shortcut=None, slot=self.clustering_off, tip="Turn Off Clustering", checkable=True)
-        self.kmeans_clustering = self.prepare_menu_entry("    KMEANS++", shortcut=None, slot=self.select_kmeans, tip="Kmeans++ Clustering", checkable=True)
+        self.clustering_off         = self.prepare_menu_entry("    OFF", shortcut=None, slot=self.clustering_off, tip="Turn Off Clustering", checkable=True)
+        self.kmeans_clustering      = self.prepare_menu_entry("    KMEANS++", shortcut=None, slot=self.select_kmeans, tip="Kmeans++ Clustering", checkable=True)
+        self.cls_sett_selection     = self.prepare_menu_entry('Clustering Settings', slot=self.select_cls_settings, tip="Cluster Settings")
         self.clusteringGroup = QActionGroup(self)
         self.clusteringGroup.addAction(self.clustering_off)
         self.clusteringGroup.addAction(self.kmeans_clustering)
         self.clusteringGroup.setDisabled(True)
-        self.add_menu_entry(self.clustering_menu, (self.clustering_off, self.kmeans_clustering))
+        self.add_menu_entry(self.clustering_menu, (self.clustering_off, self.kmeans_clustering, None, self.cls_sett_selection))
 
         self.view_menu = self.menuBar().addMenu("&View")
         color_scheme_label = self.prepare_menu_entry('Color schemes:', greyed_out=True)
@@ -646,7 +647,14 @@ class MainWindow(QMainWindow):
     def set_checkable_menu_selection(self, val=True):
         self.embeddingGroup.setEnabled(True)
         self.clusteringGroup.setEnabled(True)
-            
+
+    def select_cls_settings(self):
+        self.kmInput = KmeansPopup(self.embedding_name, self.cluster_dim)
+        self.kmInput.exec_()
+
+        self.cluster_dim = int(self.kmInput.dimRadioString)
+        self.cluster_num = int(self.kmInput.sliderValue)
+        self.cluster_met = str(self.kmInput.distComboBoxString)
 
     def fill_attribute_list(self, names):
         """ Fills the attribute list, visible  on the right side of the application """
@@ -934,6 +942,7 @@ class MainWindow(QMainWindow):
             self.reset_label()
             if self.clustering:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (XY)')
+                self.cluster_dim = 2
                 self.manage_clustering()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (XY)')
@@ -967,6 +976,7 @@ class MainWindow(QMainWindow):
             self.reset_label()
             if self.clustering:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (LLE)')
+                self.cluster_dim = 2
                 self.manage_clustering()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (LLE)')
@@ -984,6 +994,7 @@ class MainWindow(QMainWindow):
             self.reset_label()
             if self.clustering:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (ISOMAP)')
+                self.cluster_dim = 2
                 self.manage_clustering()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (ISOMAP)')
@@ -1001,6 +1012,7 @@ class MainWindow(QMainWindow):
             self.reset_label()
             if self.clustering:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (MDS)')
+                self.cluster_dim = 2
                 self.manage_clustering()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (MDS)')
@@ -1019,6 +1031,7 @@ class MainWindow(QMainWindow):
             self.reset_label()
             if self.clustering:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (ICA)')
+                self.cluster_dim = 2
                 self.manage_clustering()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (ICA)')
@@ -1037,6 +1050,7 @@ class MainWindow(QMainWindow):
             self.reset_label()
             if self.clustering:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (t-SNE)')
+                self.cluster_dim = 2
                 self.manage_clustering()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (t-SNE)')
@@ -1054,6 +1068,7 @@ class MainWindow(QMainWindow):
             self.reset_label()
             if self.clustering:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (LSP)')
+                self.cluster_dim = 2
                 self.manage_clustering()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (LSP)')
@@ -1067,7 +1082,7 @@ class MainWindow(QMainWindow):
     def select_cpca(self):
         """ Selecte constrained knowledge based kernel PCA as embedding algorithm """
         if self.data != None:
-            self.embedding_name = "CPCA"
+            self.embedding_name = "kPCA"
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_available()
             self.reset_label()
@@ -1102,9 +1117,9 @@ class MainWindow(QMainWindow):
 
     def manage_clustering(self):
         if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
-            self.embedding_algorithm.set_embedding_type(self.embedding_name)
+            self.embedding_algorithm.set_embedding_type(self.embedding_name, self.cluster_dim)
         else:
-            self.embedding_algorithm = CLUSTER_OVERLAY(self.data.data, self.control_points, self, self.embedding_name)
+            self.embedding_algorithm = CLUSTER_OVERLAY(self.data.data, self.control_points, self, self.cluster_dim, self.cluster_num, self.cluster_met, self.embedding_name)
     '''
     def select_xy(self):
         if self.data != None:
@@ -1741,7 +1756,7 @@ class MainWindow(QMainWindow):
             self.axes.plot([0,0], [self.ylim[0], self.ylim[1]], color='k', alpha=0.08, zorder=0)
             self.axes.plot([self.xlim[0], self.xlim[1]], [0,0], color='k', alpha=0.08, zorder=0)
         if self.point_representation:
-            if self.clustering:
+            if self.clustering and (self.embedding_algorithm.get_cluster_assocations() != []):
                 clusters = self.embedding_algorithm.get_cluster_assocations()
                 #clusterColor = np.ndarray.tolist(np.add(np.zeros(len(clusters)), np.multiply(clusters, 1.0/max(clusters))))
                 clusterColors = np.ndarray.tolist(clusters.astype(float) / np.max(clusters))
@@ -1794,7 +1809,120 @@ class MainWindow(QMainWindow):
 
         self.canvas.draw()
     
+class KmeansPopup(QDialog):
 
+    CURRENT_DIST_METRIC = "euclidean"
+    CURRENT_DIM_ID = 0
+
+    '''self.distMap = {"Euclidean":"euclidean", "Braycurtis":"braycurtis", "Canberra":"canberra",
+    "Chebyshev":"chebyshev", "Manhattan":"cityblock", "Correlation":"correlation", "Cosine":"cosine",
+    "Hamming":"hamming", "Jaccard":"jaccard","Mahalanobis":"mahalanobis", "Minkowski":"minkowski",
+    "Standard Euclidean":"seuclidean", "Squared Euclidean":"sqeuclidean"}'''
+
+    distSelectionOptions = ["Euclidean", "Braycurtis", "Canberra", "Chebyshev", "Manhattan",
+    "Correlation", "Cosine", "Hamming", "Jaccard", "Mahalanobis", "Minkowski", "Standard Euclidean", "Squared Euclidean"]
+    distSelectionValues = ["euclidean", "braycurtis", "canberra", "chebyshev", "cityblock",
+    "correlation", "cosine", "hamming", "jaccard", "mahalanobis", "minkowski", "seuclidean", "sqeuclidean"]
+
+    EmbDimOptions = ["PCA", "kPCA", "MLE"]
+    variableDim = False
+
+    dimSelectionOptions = ["2", "4", "7"]
+
+    def __init__(self, embedding_name, embedding_dim, default=4, minimum=1, maximum=20):
+        print KmeansPopup.CURRENT_DIST_METRIC
+        print id(KmeansPopup.CURRENT_DIST_METRIC)
+        QWidget.__init__(self)
+
+        if(embedding_name in KmeansPopup.EmbDimOptions):
+            KmeansPopup.variableDim = True
+        else:
+            KmeansPopup.variableDim = False
+
+        self.dimSelectionChange(KmeansPopup.dimSelectionOptions.index(str(embedding_dim)))
+
+        self.distComboBoxString = KmeansPopup.CURRENT_DIST_METRIC
+        self.dimRadioString = KmeansPopup.dimSelectionOptions[KmeansPopup.CURRENT_DIM_ID]
+        self.sliderValue = default
+
+        self.layout =  QGridLayout(self)
+
+        self.distSelectLbl = QLabel()
+        self.distSelectLbl.setText("Select Preferred Distance Function")
+        self.distSelect = QComboBox()
+        self.distSelect.addItems(KmeansPopup.distSelectionOptions)
+        self.distSelect.currentIndexChanged.connect(self.distSelectionChange)
+        self.distSelect.setCurrentIndex(KmeansPopup.distSelectionValues.index(KmeansPopup.CURRENT_DIST_METRIC))
+
+        print KmeansPopup.CURRENT_DIM_ID
+
+        self.clusterNumberLbl = QLabel()
+        self.clusterNumberLbl.setText("Select Number of Clusters")
+        
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setMinimum(minimum)
+        self.slider.setMaximum(maximum)
+        self.slider.setValue(default)
+
+        self.valueLabel = QLabel()
+        self.valueLabel.setText('%d' % (self.slider.value()))
+        self.slider.valueChanged.connect(self.sliderChanged)
+
+        if KmeansPopup.variableDim:
+            self.projectionSelectionGroup = QGroupBox("Select Projection Dimensions")
+            self.radio1 = QRadioButton("2")
+            self.radio2 = QRadioButton("4")
+            self.radio3 = QRadioButton("7")
+
+            self.radioGroup = QButtonGroup()
+            self.radioGroup.addButton(self.radio1)
+            self.radioGroup.addButton(self.radio2)
+            self.radioGroup.addButton(self.radio3)
+            self.radioGroup.setId(self.radio1, 0)
+            self.radioGroup.setId(self.radio2, 1)
+            self.radioGroup.setId(self.radio3, 2)
+
+            self.radioGroup.button(KmeansPopup.CURRENT_DIM_ID).setChecked(True)
+
+            self.radioGroup.buttonClicked[int].connect(self.dimSelectionChange)
+
+            self.vbox = QVBoxLayout()
+            self.vbox.addWidget(self.radio1)
+            self.vbox.addWidget(self.radio2)
+            self.vbox.addStretch(1)
+            self.projectionSelectionGroup.setLayout(self.vbox)
+
+        self.button = QPushButton('Ok', self)
+        self.button.clicked.connect(self.handleButton)
+        self.button.pressed.connect(self.handleButton)
+
+        self.layout.addWidget(self.distSelectLbl,1,1)
+        self.layout.addWidget(self.distSelect,1,2)
+        self.layout.addWidget(self.clusterNumberLbl,2,1)
+        self.layout.addWidget(self.slider,2,2)
+        self.layout.addWidget(self.valueLabel,2,3)
+        self.layout.addWidget(self.button,4,1, 4,3)
+
+        if KmeansPopup.variableDim:
+            self.layout.addWidget(self.projectionSelectionGroup,3,1)
+
+        self.setWindowTitle("Kmeans Settings")
+
+    def sliderChanged(self):
+        val = self.slider.value()
+        self.valueLabel.setText('%d' %val)
+        self.sliderValue = val
+ 
+    def handleButton(self):
+        self.hide()
+
+    def distSelectionChange(self):
+        self.distComboBoxString = KmeansPopup.distSelectionValues[KmeansPopup.distSelectionOptions.index(str(self.distSelect.currentText()))]
+        KmeansPopup.CURRENT_DIST_METRIC = self.distComboBoxString
+
+    def dimSelectionChange(self, ind):
+        self.dimRadioString = KmeansPopup.dimSelectionOptions[ind]
+        KmeansPopup.CURRENT_DIM_ID = ind
 
 
 

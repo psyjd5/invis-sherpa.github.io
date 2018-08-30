@@ -69,126 +69,6 @@ class PopupSlider(QDialog):
     def handleButton(self):
         self.hide()
 
-class KmeansPopup(QDialog):
-
-    CURRENT_DIST_METRIC = "euclidean"
-    CURRENT_EMB = "PCA"
-    CURRENT_DIM_ID = 0
-
-    '''self.distMap = {"Euclidean":"euclidean", "Braycurtis":"braycurtis", "Canberra":"canberra",
-    "Chebyshev":"chebyshev", "Manhattan":"cityblock", "Correlation":"correlation", "Cosine":"cosine",
-    "Hamming":"hamming", "Jaccard":"jaccard","Mahalanobis":"mahalanobis", "Minkowski":"minkowski",
-    "Standard Euclidean":"seuclidean", "Squared Euclidean":"sqeuclidean"}'''
-
-    distSelectionOptions = ["Euclidean", "Braycurtis", "Canberra", "Chebyshev", "Manhattan",
-    "Correlation", "Cosine", "Hamming", "Jaccard", "Mahalanobis", "Minkowski", "Standard Euclidean", "Squared Euclidean"]
-    distSelectionValues = ["euclidean", "braycurtis", "canberra", "chebyshev", "cityblock",
-    "correlation", "cosine", "hamming", "jaccard", "mahalanobis", "minkowski", "seuclidean", "sqeuclidean"]
-
-    EmbSelectionOptions = ["PCA", "kPCA", "MLE"]
-
-    dimSelectionOptions = ["4", "7"]
-
-    def __init__(self, default=4, minimum=1, maximum=20):
-        print KmeansPopup.CURRENT_DIST_METRIC
-        print id(KmeansPopup.CURRENT_DIST_METRIC)
-        QWidget.__init__(self)
-        self.distComboBoxString = KmeansPopup.CURRENT_DIST_METRIC
-        self.embComboBoxString = KmeansPopup.CURRENT_EMB
-        self.dimRadioString = KmeansPopup.dimSelectionOptions[KmeansPopup.CURRENT_DIM_ID]
-        self.sliderValue = default
-
-        self.layout =  QGridLayout(self)
-
-        self.distSelectLbl = QLabel()
-        self.distSelectLbl.setText("Select Preferred Distance Function")
-        self.distSelect = QComboBox()
-        self.distSelect.addItems(KmeansPopup.distSelectionOptions)
-        self.distSelect.currentIndexChanged.connect(self.distSelectionChange)
-        self.distSelect.setCurrentIndex(KmeansPopup.distSelectionValues.index(KmeansPopup.CURRENT_DIST_METRIC))
-
-        self.EmbTypeLbl = QLabel()
-        self.EmbTypeLbl.setText("Select Preferred Embedding")
-        self.EmbType = QComboBox()
-        self.EmbType.addItems(KmeansPopup.EmbSelectionOptions)
-        self.EmbType.currentIndexChanged.connect(self.embSelectionChange)
-        self.EmbType.setCurrentIndex(KmeansPopup.EmbSelectionOptions.index(KmeansPopup.CURRENT_EMB))
-
-        self.projectionNumberLbl = QLabel()
-        self.projectionNumberLbl.setText("Select Projection Level")
-        
-        self.projectionSelectionGroup = QGroupBox("Select Projection Dimensions")
-
-        self.radio1 = QRadioButton("4")
-        self.radio2 = QRadioButton("7")
-
-        self.radioGroup = QButtonGroup()
-        self.radioGroup.addButton(self.radio1)
-        self.radioGroup.addButton(self.radio2)
-        self.radioGroup.setId(self.radio1, 0)
-        self.radioGroup.setId(self.radio2, 1)
-
-        print KmeansPopup.CURRENT_DIM_ID
-        self.radioGroup.button(KmeansPopup.CURRENT_DIM_ID).setChecked(True)
-
-        self.radioGroup.buttonClicked[int].connect(self.dimSelectionChange)
-
-        self.vbox = QVBoxLayout()
-        self.vbox.addWidget(self.radio1)
-        self.vbox.addWidget(self.radio2)
-        self.vbox.addStretch(1)
-        self.projectionSelectionGroup.setLayout(self.vbox)
-
-        self.clusterNumberLbl = QLabel()
-        self.clusterNumberLbl.setText("Select Number of Clusters")
-        
-        self.slider = QSlider(Qt.Horizontal)
-        self.slider.setMinimum(minimum)
-        self.slider.setMaximum(maximum)
-        self.slider.setValue(default)
-
-        self.valueLabel = QLabel()
-        self.valueLabel.setText('%d' % (self.slider.value()))
-        self.slider.valueChanged.connect(self.sliderChanged)
-
-        self.button = QPushButton('Ok', self)
-        self.button.clicked.connect(self.handleButton)
-        self.button.pressed.connect(self.handleButton)
-
-        self.layout.addWidget(self.distSelectLbl,1,1)
-        self.layout.addWidget(self.distSelect,1,2)
-        self.layout.addWidget(self.EmbTypeLbl, 2,1)
-        self.layout.addWidget(self.EmbType, 2,2)
-        self.layout.addWidget(self.clusterNumberLbl,3,1)
-        self.layout.addWidget(self.slider,3,2)
-        self.layout.addWidget(self.valueLabel,3,3)
-        self.layout.addWidget(self.button,5,1, 5,3)
-        self.layout.addWidget(self.projectionSelectionGroup,4,1)
-
-        self.setWindowTitle("Kmeans Settings")
-
-
-    def sliderChanged(self):
-        val = self.slider.value()
-        self.valueLabel.setText('%d' %val)
-        self.sliderValue = val
- 
-
-    def handleButton(self):
-        self.hide()
-
-    def distSelectionChange(self):
-        self.distComboBoxString = KmeansPopup.distSelectionValues[KmeansPopup.distSelectionOptions.index(str(self.distSelect.currentText()))]
-        KmeansPopup.CURRENT_DIST_METRIC = self.distComboBoxString
-    
-    def embSelectionChange(self):
-        self.embComboBoxString = self.EmbType.currentText()
-        KmeansPopup.CURRENT_EMB = self.embComboBoxString
-
-    def dimSelectionChange(self, ind):
-        self.dimRadioString = KmeansPopup.dimSelectionOptions[ind]
-        KmeansPopup.CURRENT_DIM_ID = ind
-
 
 class Embedding(object):
     def __init__(self, data, points, parent):
@@ -848,61 +728,57 @@ class MLE(Embedding):
         self.update_control_points(points)
 
 class CLUSTER_OVERLAY(object):
-    def __init__(self, data, points, parent, emb="MLE", cls="KMEANS"):
+    def __init__(self, data, points, parent, dim=2, num=3, met="euclidean", emb="MLE", clus="KMEANS"):
         self.parent = parent
         #self.kmInput = KmeansPopup()
         #self.kmInput.exec_()
-        self.num = 3
-        self.dim = 4
-        self.met = "euclidean"
-        self.cls = cls
         self.data = data
         self.points = points
-        '''self.num = int(self.kmInput.sliderValue)
-        self.met = str(self.kmInput.distComboBoxString)
-        self.dim = int(self.kmInput.dimRadioString)
-        self.embeddingType = str(self.kmInput.embComboBoxString)
-        print self.num
-        print self.met
-        print self.dim
-        print self.embeddingType'''
 
         self.cluster_association = []
         self.cluster_centers = []
         self.cluster_centers_embedding = []
 
-        self.set_embedding_type(emb)
+        self.set_embedding_type(emb, dim)
 
-        self.is_dynamic = self.embedding.is_dynamic
-        self.name = self.embedding.name
         self.get_embedding()
-        self.generate_cluster()
+        self.generate_cluster(num, met, clus)
 
-    def set_embedding_type(self, emb):
+    def set_embedding_type(self, emb, dim):
         self.embeddingType = emb
+        self.dim=dim
         if (self.embeddingType == "XY"):
             self.embedding = XY(self.data, self.points, self.parent)
+            self.dim=2
         elif (self.embeddingType == "PCA"):
             self.embedding = PCA(self.data, self.points, self.parent, dim=self.dim)    
         elif (self.embeddingType == "LLE"):
             self.embedding = LLE(self.data, self.points, self.parent)
+            self.dim=2
         elif (self.embeddingType == "ISO"):
             self.embedding = ISO(self.data, self.points, self.parent)
+            self.dim=2
         elif (self.embeddingType == "MDS"):
             self.embedding = MDS(self.data, self.points, self.parent)
+            self.dim=2
         elif (self.embeddingType == "ICA"):
             self.embedding = ICA(self.data, self.points, self.parent)
+            self.dim=2
         elif (self.embeddingType == "TSNE"):
             self.embedding = tSNE(self.data, self.points, self.parent)
+            self.dim=2
         elif (self.embeddingType == "LSP"):
-            self.embedding = LSP(self.data, self.points, self.parent)    
+            self.embedding = LSP(self.data, self.points, self.parent)  
+            self.dim=2 
         elif (self.embeddingType == "MLE"):
             self.embedding = MLE(self.data, self.points, self.parent, dim=self.dim)
         elif (self.embeddingType == "kPCA"):
             self.embedding = cPCA(self.data, self.points, self.parent, dim=self.dim)
         else:
             self.embedding = PCA(self.data, self.points, self.parent, dim=self.dim)
-
+        self.is_dynamic = self.embedding.is_dynamic
+        self.name = self.embedding.name
+        
     def get_embedding(self):
         embed = self.embedding.get_embedding()
         return embed
@@ -919,9 +795,12 @@ class CLUSTER_OVERLAY(object):
         relocate = self.embedding.finished_relocating()
         return relocate
 
-    def generate_cluster(self):
+    def generate_cluster(self, num, met, clus):
         embed = self.get_embedding()
-        if (self.cls == "KMEANS"):
+        self.num = num
+        self.met = met
+        self.clus = clus
+        if (self.clus == "KMEANS"):
             self.run_kmeans(embed.T, self.num, self.met)
         else:
             self.run_kmeans(embed.T, self.num, self.met) # DEFAULT CLUSTERING
