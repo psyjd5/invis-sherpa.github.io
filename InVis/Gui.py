@@ -34,6 +34,7 @@ class MainWindow(QMainWindow):
         self.embedding_name = None
         self.restrictedDimEmbedding = None
         self.embedding_algorithm = None
+        self.pure_embedding_algorithm = None
         self.framesize = 3
         self.xlim = [-3,3]
         self.ylim = [-3,3]
@@ -85,6 +86,7 @@ class MainWindow(QMainWindow):
         self.cluster_dim = 2
         self.cluster_num = 3
         self.cluster_met = "euclidean"
+        self.cluster_type = "KMEANS"
 
         self.info_request = False
         self.cp_select_request = False
@@ -429,6 +431,7 @@ class MainWindow(QMainWindow):
         self.clusteringGroup.addAction(self.clustering_off)
         self.clusteringGroup.addAction(self.kmeans_clustering)
         self.clusteringGroup.setDisabled(True)
+        self.cls_sett_selection.setDisabled(True)
         self.add_menu_entry(self.clustering_menu, (self.clustering_off, self.kmeans_clustering, None, self.cls_sett_selection))
 
         self.view_menu = self.menuBar().addMenu("&View")
@@ -649,12 +652,15 @@ class MainWindow(QMainWindow):
         self.clusteringGroup.setEnabled(True)
 
     def select_cls_settings(self):
-        self.kmInput = KmeansPopup(self.embedding_name, self.cluster_dim)
+        self.kmInput = KmeansPopup(self.embedding_name, self.cluster_dim, self.cluster_num)
         self.kmInput.exec_()
 
         self.cluster_dim = int(self.kmInput.dimRadioString)
         self.cluster_num = int(self.kmInput.sliderValue)
         self.cluster_met = str(self.kmInput.distComboBoxString)
+        self.embedding_algorithm.set_embedding_type(self.embedding_name, self.cluster_dim)
+        self.embedding_algorithm.generate_cluster(self.cluster_num, self.cluster_met, self.cluster_type)
+        self.update()
 
     def fill_attribute_list(self, names):
         """ Fills the attribute list, visible  on the right side of the application """
@@ -863,8 +869,11 @@ class MainWindow(QMainWindow):
                     self.data.instance_names = [self.data.instance_names[i] for i in self.lassoed_points]
                     self.data.data = self.data.data[self.lassoed_points]
                     self.data.original_data = self.data.original_data[self.lassoed_points]
-                    self.embedding_algorithm.__init__(self.data.data, self.control_points, self)
-                    self.set_labels_as_colors()
+                    if self.clustering:
+                        self.embedding_algorithm.set_data_and_cp(self.data.data, self.control_points)
+                    else:
+                        self.embedding_algorithm.__init__(self.data.data, self.control_points, self)
+                        self.set_labels_as_colors()
                     self.clear()
             else:
                 self.cut_button.setIcon(QIcon(os.path.join(self.cwd,"cut.png")))
@@ -875,8 +884,11 @@ class MainWindow(QMainWindow):
                 self.data.data = copy(self.unclipped_data)
                 self.control_points = copy(self.saved_control_points)
                 self.data.instance_names = copy(self.unclipped_instance_names)
-                self.embedding_algorithm.__init__(self.data.data, self.control_points, self)
-                self.set_labels_as_colors()
+                if self.clustering:
+                        self.embedding_algorithm.set_data_and_cp(self.data.data, self.control_points)
+                else:
+                    self.embedding_algorithm.__init__(self.data.data, self.control_points, self)
+                    self.set_labels_as_colors()
                 self.clear()
 
 
@@ -925,13 +937,19 @@ class MainWindow(QMainWindow):
     def clustering_off(self):
         self.clustering = False
         self.embeddingGroup.checkedAction().trigger()
+        self.cls_sett_selection.setDisabled(True)
+
+    def clustering_on(self, name):
+        self.clustering = True
+        self.embeddingGroup.checkedAction().trigger()
+        self.cluster_type = name
+        self.cls_sett_selection.setEnabled(True)
 
     def select_kmeans(self):
         """ Overlay Kmeans++ Clustering """
         if self.data != None:
-            self.clustering = True
-            self.clustering_name = "KMEANS"
-            self.embeddingGroup.checkedAction().trigger()
+            if not self.clustering:
+                self.clustering_on("KMEANS")
 
     def select_xy(self):
         """ Calculate a plain PCA embedding """
@@ -941,12 +959,15 @@ class MainWindow(QMainWindow):
             self.set_mc_cl_unavailable()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (XY)')
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (XY)')
                 self.cluster_dim = 2
-                self.manage_clustering()
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (XY)')
-                self.embedding_algorithm = XY(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = XY(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.update()
 
@@ -959,11 +980,14 @@ class MainWindow(QMainWindow):
             self.set_mc_cl_unavailable()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (PCA)')
-                self.manage_clustering()
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (PCA)')
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (PCA)')
-                self.embedding_algorithm = PCA(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = PCA(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.update()
 
@@ -975,12 +999,15 @@ class MainWindow(QMainWindow):
             self.set_mc_cl_unavailable()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (LLE)')
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (LLE)')
                 self.cluster_dim = 2
-                self.manage_clustering()
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (LLE)')
-                self.embedding_algorithm = LLE(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = LLE(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.update()
 
@@ -993,12 +1020,15 @@ class MainWindow(QMainWindow):
             self.set_mc_cl_unavailable()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (ISOMAP)')
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (ISOMAP)')
                 self.cluster_dim = 2
-                self.manage_clustering()
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (ISOMAP)')
-                self.embedding_algorithm = ISO(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = ISO(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.update()
 
@@ -1011,12 +1041,15 @@ class MainWindow(QMainWindow):
             self.set_mc_cl_unavailable()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (MDS)')
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (MDS)')
                 self.cluster_dim = 2
-                self.manage_clustering()
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (MDS)')
-                self.embedding_algorithm = MDS(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = MDS(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.update()
 
@@ -1030,12 +1063,15 @@ class MainWindow(QMainWindow):
             self.set_mc_cl_unavailable()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (ICA)')
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (ICA)')
                 self.cluster_dim = 2
-                self.manage_clustering()
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (ICA)')
-                self.embedding_algorithm = ICA(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = ICA(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.update()
 
@@ -1044,17 +1080,20 @@ class MainWindow(QMainWindow):
     def select_tsne(self):
         """ Calculate an t-SNE embedding """
         if self.data != None:
-            self.embedding_name = "TSNE"
+            self.embedding_name = "t-SNE"
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_unavailable()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (t-SNE)')
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (t-SNE)')
                 self.cluster_dim = 2
-                self.manage_clustering()
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (t-SNE)')
-                self.embedding_algorithm = tSNE(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = tSNE(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.update()
 
@@ -1067,12 +1106,15 @@ class MainWindow(QMainWindow):
             self.set_mc_cl_available()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (LSP)')
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (LSP)')
                 self.cluster_dim = 2
-                self.manage_clustering()
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (LSP)')
-                self.embedding_algorithm = LSP(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = LSP(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.embedding_algorithm.update_must_and_cannot_link(self.must_link, self.cannot_link)
             self.embedding_algorithm.update_control_points(self.control_points)
@@ -1082,16 +1124,19 @@ class MainWindow(QMainWindow):
     def select_cpca(self):
         """ Selecte constrained knowledge based kernel PCA as embedding algorithm """
         if self.data != None:
-            self.embedding_name = "kPCA"
+            self.embedding_name = "cPCA"
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select_unavailable.png")))
             self.set_mc_cl_available()
             self.reset_label()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (c-KPCA)')
-                self.manage_clustering()
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (c-KPCA)')
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (c-KPCA)')
-                self.embedding_algorithm = cPCA(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = cPCA(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.embedding_algorithm.update_must_and_cannot_link(self.must_link, self.cannot_link)
             self.embedding_algorithm.update_control_points(self.control_points)
@@ -1105,77 +1150,32 @@ class MainWindow(QMainWindow):
             self.auto_select_button.setIcon(QIcon(os.path.join(self.cwd,"auto_select.png")))
             self.set_mc_cl_available()
             if self.clustering:
-                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.clustering_name + ' (MLE)')
-                self.manage_clustering()
+                self.setWindowTitle('InVis: ' + self.data.dataset_name + ' ' + self.cluster_type + ' (MLE)')
+                self.embed_to_cluster()
             else:
                 self.setWindowTitle('InVis: ' + self.data.dataset_name + ' (MLE)')
-                self.embedding_algorithm = MLE(self.data.data, self.control_points, self)
+                if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+                    self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+                else:
+                    self.embedding_algorithm = MLE(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.embedding_algorithm.update_must_and_cannot_link(self.must_link, self.cannot_link)
             self.embedding_algorithm.update_control_points(self.control_points)
             self.update()
 
-    def manage_clustering(self):
+    def embed_to_cluster(self):
         if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
             self.embedding_algorithm.set_embedding_type(self.embedding_name, self.cluster_dim)
         else:
-            self.embedding_algorithm = CLUSTER_OVERLAY(self.data.data, self.control_points, self, self.cluster_dim, self.cluster_num, self.cluster_met, self.embedding_name)
-    '''
-    def select_xy(self):
-        if self.data != None:
-            self.embedding_name = "XY"
-            self.manage_embedding()
-
-    def select_pca(self):
-        if self.data != None:
-            self.embedding_name = "PCA"
-            self.manage_embedding()
+            self.embedding_algorithm = CLUSTER_OVERLAY(self.embedding_algorithm, self.control_points, self, self.cluster_dim, self.cluster_num, self.cluster_met, self.embedding_name)
     
-    def select_lle(self):
-        if self.data != None:
-            self.embedding_name = "LLE"
-            self.manage_embedding()
-
-    def select_isomap(self):
-        if self.data != None:
-            self.embedding_name = "ISO"
-            self.manage_embedding()
-
-    def select_mds(self):
-        if self.data != None:
-            self.embedding_name = "MDS"
-            self.manage_embedding()
-
-    def select_ica(self):
-        if self.data != None:
-            self.embedding_name = "ICA"
-            self.manage_embedding()
-            
-    def select_tsne(self):
-        if self.data != None:
-            self.embedding_name = "TSNE"
-            self.manage_embedding()
-            
-    def select_lsp(self):
-        if self.data != None:
-            self.embedding_name = "LSP"
-            self.manage_embedding()
-            
-    def select_cpca(self):
-        if self.data != None:
-            self.embedding_name = "CPCA"
-            self.manage_embedding()
-            
-    def select_mle(self):
-        if self.data != None:
-            self.embedding_name = "MLE"
-            self.manage_embedding()
-            
-    def manage_embedding(self):
-        if self.data != None:
-            
-        pass'''
-
+    '''
+    def cluster_to_embed(self):
+        if (type(self.embedding_algorithm).__name__ == "CLUSTER_OVERLAY"):
+            self.embedding_algorithm = self.embedding_algorithm.get_embedding_object()
+        else:
+            self.embedding_algorithm = CLUSTER_OVERLAY(self.embedding_algorithm, self.control_points, self, self.cluster_dim, self.cluster_num, self.cluster_met, self.embedding_name)
+    '''
     def set_labels_as_colors(self):
         """ 0-1 normalizes the labels values and sets them as colors """
         if self.data != None:
@@ -1738,7 +1738,7 @@ class MainWindow(QMainWindow):
 
     def generate_cluster(self):
         if self.clustering:
-            self.embedding_algorithm.generate_cluster()
+            self.embedding_algorithm.generate_cluster(self.cluster_num, self.cluster_met, self.cluster_type)
             self.update()
 
     def update(self):
@@ -1834,6 +1834,8 @@ class KmeansPopup(QDialog):
         print id(KmeansPopup.CURRENT_DIST_METRIC)
         QWidget.__init__(self)
 
+        print embedding_name
+        print 2
         if(embedding_name in KmeansPopup.EmbDimOptions):
             KmeansPopup.variableDim = True
         else:
@@ -1889,6 +1891,7 @@ class KmeansPopup(QDialog):
             self.vbox = QVBoxLayout()
             self.vbox.addWidget(self.radio1)
             self.vbox.addWidget(self.radio2)
+            self.vbox.addWidget(self.radio3)
             self.vbox.addStretch(1)
             self.projectionSelectionGroup.setLayout(self.vbox)
 

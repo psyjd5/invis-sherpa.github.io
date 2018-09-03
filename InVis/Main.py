@@ -83,6 +83,7 @@ class InVis(MainWindow):
             self.mask = np.ones(len(self.data.data)).astype(bool)
             self.fill_attribute_list(self.data.attribute_names)
             self.label_text_field.setText(self.data.label_name)
+            self.embedding_name = "MLE"
             self.embedding_algorithm = MLE(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.label_updated()
@@ -146,6 +147,7 @@ class InVis(MainWindow):
             self.mask = np.ones(len(self.data.data)).astype(bool)
             self.fill_attribute_list(self.data.attribute_names)
             self.label_text_field.setText(self.data.label_name)
+            self.embedding_name = "MLE"
             self.embedding_algorithm = MLE(self.data.data, self.control_points, self)
             self.set_xy_limits()
             self.label_updated()

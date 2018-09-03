@@ -29,6 +29,8 @@ try:
 except:
     pass
 
+emb_unrestricted_dims = ["PCA", "cPCA", "MLE"]
+
 class PopupSlider(QDialog):
     def __init__(self, label_text, default=4, minimum=1, maximum=20):
         QWidget.__init__(self)
@@ -155,25 +157,6 @@ class Embedding(object):
 
     def finished_relocating(self):
         pass
-
-'''class EmbeddingContainter(object):
-    def __init__(self, data, points, parent, embeddingType="PCA"):
-        self.embeddingType = embeddingType
-        if(self.embeddingType == "PCA"):
-            self.embedding = PCA(data, points, parent)
-        else if
-
-    def get_embedding(self):
-        self.embedding.get_embedding()
-
-    def update_must_and_cannot_link(self, ml, cl):
-        self.embedding.update_must_and_cannot_link(ml,cl)
-
-    def update_control_points(self, points):
-        self.embedding.update_control_points(points)
-
-    def finished_relocating(self):
-        self.embedding.finished_relocating()'''
 
 class PCA(Embedding):
     def __init__(self, data, control_points, parent, dim=2):
@@ -727,52 +710,58 @@ class MLE(Embedding):
         
         self.update_control_points(points)
 
+'''
+    This class can be used to add things on top of the projections such as a clsutering algorithm. It is essentially a wrapper around the embeddings/projections.
+    It would have been probably better to design the projections at the top of the heirarchy (An embedding uses a clustering algorithm) but this made 
+    it easier to integrate with the gui.
+'''
 class CLUSTER_OVERLAY(object):
-    def __init__(self, data, points, parent, dim=2, num=3, met="euclidean", emb="MLE", clus="KMEANS"):
+    def __init__(self, embed, points, parent, dim=2, num=3, met="euclidean", emb="MLE", clus="KMEANS"):
         self.parent = parent
-        #self.kmInput = KmeansPopup()
-        #self.kmInput.exec_()
-        self.data = data
+        self.data = embed.data
         self.points = points
 
         self.cluster_association = []
         self.cluster_centers = []
         self.cluster_centers_embedding = []
 
-        self.set_embedding_type(emb, dim)
+        self.embedding = embed
+        self.dim=2
+        self.is_dynamic = self.embedding.is_dynamic
+        self.name = self.embedding.name
 
         self.get_embedding()
         self.generate_cluster(num, met, clus)
 
-    def set_embedding_type(self, emb, dim):
-        self.embeddingType = emb
+    def set_embedding_type(self, name, dim):
+        self.name = name
         self.dim=dim
-        if (self.embeddingType == "XY"):
+        if (self.name == "XY"):
             self.embedding = XY(self.data, self.points, self.parent)
             self.dim=2
-        elif (self.embeddingType == "PCA"):
+        elif (self.name == "PCA"):
             self.embedding = PCA(self.data, self.points, self.parent, dim=self.dim)    
-        elif (self.embeddingType == "LLE"):
+        elif (self.name == "LLE"):
             self.embedding = LLE(self.data, self.points, self.parent)
             self.dim=2
-        elif (self.embeddingType == "ISO"):
+        elif (self.name == "ISO"):
             self.embedding = ISO(self.data, self.points, self.parent)
             self.dim=2
-        elif (self.embeddingType == "MDS"):
+        elif (self.name == "MDS"):
             self.embedding = MDS(self.data, self.points, self.parent)
             self.dim=2
-        elif (self.embeddingType == "ICA"):
+        elif (self.name == "ICA"):
             self.embedding = ICA(self.data, self.points, self.parent)
             self.dim=2
-        elif (self.embeddingType == "TSNE"):
+        elif (self.name == "t-SNE"):
             self.embedding = tSNE(self.data, self.points, self.parent)
             self.dim=2
-        elif (self.embeddingType == "LSP"):
+        elif (self.name == "LSP"):
             self.embedding = LSP(self.data, self.points, self.parent)  
             self.dim=2 
-        elif (self.embeddingType == "MLE"):
+        elif (self.name == "MLE"):
             self.embedding = MLE(self.data, self.points, self.parent, dim=self.dim)
-        elif (self.embeddingType == "kPCA"):
+        elif (self.name == "cPCA"):
             self.embedding = cPCA(self.data, self.points, self.parent, dim=self.dim)
         else:
             self.embedding = PCA(self.data, self.points, self.parent, dim=self.dim)
@@ -782,6 +771,20 @@ class CLUSTER_OVERLAY(object):
     def get_embedding(self):
         embed = self.embedding.get_embedding()
         return embed
+
+    def set_data_and_cp(self, data, points):
+        self.data = data
+        self.points = points
+        self.set_embedding_type(self.name,self.dim)
+        self.generate_cluster(self.num, self.met, self.clus)
+
+    def get_embedding_object(self):
+        '''Have to make sure dimensions are reduced back to 2 dimensions'''
+        if ((self.name in emb_unrestricted_dims) and (self.dim > 2)):
+            self.set_embedding_type(self.name, 2)
+            return self.embedding
+        else:
+            return self.embedding
 
     def update_must_and_cannot_link(self, ml, cl):
         self.embedding.update_must_and_cannot_link(ml,cl)
