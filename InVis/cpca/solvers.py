@@ -708,15 +708,6 @@ class greedy_dir_solver(object):
                     directions[:, i] = quad_eig_sys[1][j].dot(directions[:, i])
             
             directions[:, i] = self.from_sphere_to_ellipsoid(directions[:, i], kernel_sys)
-            '''print "directions[:, i]"
-            print directions[:, i]
-
-            print "size dir_res"
-            print np.size(np.array(dir_res))
-            print "size dir_res[2][1].T"
-            print np.size(np.array(dir_res[2][1].T))
-            print "dir_res[2][1].T"
-            print dir_res[2][1].T'''
             d = dir_res[2][1].T.dot(d)
             #print "d = dir_res[2][1].T.dot(d)"
             #print d
@@ -727,14 +718,6 @@ class greedy_dir_solver(object):
             #print "alpha = dir_res[2][1].T.dot(alpha)"
             #print alpha
             dir_eig_sys.append(dir_res[2])
-            '''print "dir_eig_sys.append(dir_res[2])"
-            print dir_eig_sys
-
-            print "DIRECTIONS"
-            print directions'''
-        
-        '''print "DIRECTION"
-        print directions'''
         return directions
 
     def _seq_eig_sys_next_direction(self, seq_eig_sys, b, r):

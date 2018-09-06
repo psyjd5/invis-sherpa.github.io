@@ -222,11 +222,12 @@ class MainWindow(QMainWindow):
 
         self.generate_button = QPushButton(shortcut="Ctrl+K")
         self.generate_button.setToolTip("Generate New Clustering <Ctrl+K>")
-        self.generate_button.setIcon(QIcon(os.path.join(self.cwd,"cluster.png")))
+        self.generate_button.setIcon(QIcon(os.path.join(self.cwd,"cluster_deactivated.png")))
         self.generate_button.setMaximumWidth(50)
 
-        self.select_cluster_button = QPushButton(shortcut="Ctrl+K")
-        self.select_cluster_button.setToolTip("Select a Cluster")
+        self.select_cluster_button = QPushButton(shortcut="Ctrl+J")
+        self.select_cluster_button.setToolTip("Select a Cluster <Ctrl+J")
+        self.select_cluster_button.setIcon(QIcon(os.path.join(self.cwd,"cluster_select_deactivated.png")))
         #self.generate_button.setIcon(QIcon(os.path.join(self.cwd,"cluster.png")))
         self.select_cluster_button.setMaximumWidth(50)
 
@@ -345,11 +346,9 @@ class MainWindow(QMainWindow):
         if self.clustering:
             self.cluster_request = not self.cluster_request
             if self.cluster_request == True:
-                pass
-                #self.lasso_button.setIcon(QIcon(os.path.join(self.cwd,"lasso_active.png")))
+                self.select_cluster_button.setIcon(QIcon(os.path.join(self.cwd,"cluster_select_active.png")))
             else:
-                pass
-                #self.lasso_button.setIcon(QIcon(os.path.join(self.cwd,"lasso.png")))
+                self.select_cluster_button.setIcon(QIcon(os.path.join(self.cwd,"cluster_select_inactive.png")))
 
 
     def create_menu(self):  
@@ -601,7 +600,7 @@ class MainWindow(QMainWindow):
         if self.data != None:
             self.ml_cl_state = None
             if self.ml_cl_available:
-                self.ml_cl_button.setIcon(os.path.join(self.cwd,"ml_cl.png"))
+                self.ml_cl_button.setIcon(QIcon(os.path.join(self.cwd,"ml_cl.png")))
             else:
                 self.ml_cl_button.setIcon(QIcon(os.path.join(self.cwd,"ml_cl_unavailable.png")))
             self.pairwise_link_marker = 0
@@ -938,12 +937,16 @@ class MainWindow(QMainWindow):
         self.clustering = False
         self.embeddingGroup.checkedAction().trigger()
         self.cls_sett_selection.setDisabled(True)
+        self.generate_button.setIcon(QIcon(os.path.join(self.cwd,"cluster_deactivated.png")))
+        self.select_cluster_button.setIcon(QIcon(os.path.join(self.cwd,"cluster_select_deactivated.png")))
 
     def clustering_on(self, name):
         self.clustering = True
         self.embeddingGroup.checkedAction().trigger()
         self.cluster_type = name
         self.cls_sett_selection.setEnabled(True)
+        self.generate_button.setIcon(QIcon(os.path.join(self.cwd,"cluster.png")))
+        self.select_cluster_button.setIcon(QIcon(os.path.join(self.cwd,"cluster_select_inactive.png")))
 
     def select_kmeans(self):
         """ Overlay Kmeans++ Clustering """
@@ -1237,7 +1240,23 @@ class MainWindow(QMainWindow):
 
     def next_uncertain(self):
         if self.data != None:
-            if self.embedding_algorithm.name == 'MLE':
+            if self.clustering and (self.embedding_algorithm.name == "MLE"):
+                uncertainties = []
+                for x in self.data.data:
+                    uncertainties.append(x.dot(self.embedding_algorithm.embedding.Psi).dot(x.T))
+                inds = np.argsort(uncertainties)[::-1]
+                for ind in inds:
+                    if ind in self.control_points:
+                        continue
+                    else:
+                        self.toggle([ind])
+                        self.embedding_algorithm.embedding.update_control_points(self.control_points)
+                        break
+                if self.uncertainty_coloring_flag:
+                    self.color_by_uncertainty()
+                else:
+                    self.update()
+            elif self.embedding_algorithm.name == 'MLE':
                 uncertainties = []
                 for x in self.data.data:
                     uncertainties.append(x.dot(self.embedding_algorithm.Psi).dot(x.T))
@@ -1253,6 +1272,7 @@ class MainWindow(QMainWindow):
                     self.color_by_uncertainty()
                 else:
                     self.update()
+
 
 
     def select_search_result(self):
